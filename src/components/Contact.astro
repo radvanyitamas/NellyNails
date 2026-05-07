@@ -156,6 +156,8 @@ const hours = settings?.find(s => s.key === 'hours')?.value || {
     slotsDiv.innerHTML = '';
     selectionArea.classList.remove('hidden');
 
+    const now = new Date(); // Aktuális idő lekérése az összehasonlításhoz
+
     const dayNum = day.getDay();
     const isWeekend = (dayNum === 0 || dayNum === 6);
     const range = isWeekend ? hoursData.weekends : hoursData.workdays;
@@ -172,10 +174,16 @@ const hours = settings?.find(s => s.key === 'hours')?.value || {
         slotDate.setHours(h, m, 0, 0);
         const slotTime = slotDate.getTime();
 
-        // ÜTKÖZÉSVIZSGÁLAT (Oda-vissza 3 óra)
-        const isBlocked = bookedTimestamps.some(bookedTime => {
+        // 1. ELLENŐRZÉS: Múltbéli időpont? (Mai nap esetén a mostani óra/perc előtt)
+        const isPast = slotDate < now;
+
+        // 2. ELLENŐRZÉS: ÜTKÖZÉSVIZSGÁLAT (Oda-vissza 3 óra a foglalásokkal)
+        const isConflict = bookedTimestamps.some(bookedTime => {
             return Math.abs(slotTime - bookedTime) < threeHoursInMs;
         });
+
+        // Ha bármelyik igaz, akkor tiltjuk a gombot
+        const isBlocked = isPast || isConflict;
 
         const btn = document.createElement('button');
         btn.type = 'button';

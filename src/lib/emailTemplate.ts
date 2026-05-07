@@ -1,7 +1,7 @@
 // src/lib/emailTemplate.ts
 
 export function getEmailHtml(name: string, date: string, confirmLink: string, manageLink: string) {
-  // Mivel a book.ts már formázott dátumot küld, itt csak közvetlenül megjelenítjük
+  // A book.ts már formázott dátumot küld, itt csak megjelenítjük
   const displayDate = date;
 
   return `
@@ -51,7 +51,7 @@ export function getEmailHtml(name: string, date: string, confirmLink: string, ma
 
         <div class="manage-box">
           <p style="color: #64748b; font-size: 12px; margin-bottom: 8px;">Közbejött valami? Itt tudod lemondani a foglalásodat:</p>
-          <a href="${manageLink}" class="manage-link">Foglalás kezelése és lemondás</a>
+          <a href="${manageLink}" class="manage-link">Időpont lemondása</a>
         </div>
 
         <div class="footer">

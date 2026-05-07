@@ -69,13 +69,30 @@ if (isAuthenticated) {
                     <div class="bg-white rounded-[3rem] shadow-2xl shadow-pink-200/20 border border-pink-50 overflow-hidden">
                         <table class="w-full text-left">
                             <thead class="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] border-b border-slate-50">
-                                <tr><th class="px-10 py-6">Időpont</th><th class="px-10 py-6">Vendég</th><th class="px-10 py-6 text-right">Művelet</th></tr>
+                                <tr>
+                                    <th class="px-10 py-6">Időpont</th>
+                                    <th class="px-10 py-6">Vendég</th>
+                                    <th class="px-10 py-6 text-center">Állapot</th>
+                                    <th class="px-10 py-6 text-right">Művelet</th>
+                                </tr>
                             </thead>
                             <tbody class="divide-y divide-slate-50">
                                 {bookings.map((b) => (
                                     <tr class="hover:bg-pink-50/10 transition-all">
-                                        <td class="px-10 py-8 font-bold text-slate-900">{new Date(b.booking_date).toLocaleString('hu-HU', { month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</td>
-                                        <td class="px-10 py-8 font-bold text-slate-800">{b.name}<br/><span class="text-xs text-slate-400 font-normal italic">{b.phone}</span></td>
+                                        <td class="px-10 py-8 font-bold text-slate-900">
+                                            {new Date(b.booking_date).toLocaleString('hu-HU', { month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                                        </td>
+                                        <td class="px-10 py-8 font-bold text-slate-800">
+                                            {b.name}<br/>
+                                            <span class="text-xs text-slate-400 font-normal italic">{b.phone}</span>
+                                        </td>
+                                        <td class="px-10 py-8 text-center">
+                                            {b.status === 'confirmed' ? (
+                                                <span class="px-4 py-1 rounded-full bg-green-100 text-green-600 text-[10px] font-bold uppercase tracking-widest border border-green-200">Megerősítve</span>
+                                            ) : (
+                                                <span class="px-4 py-1 rounded-full bg-amber-100 text-amber-600 text-[10px] font-bold uppercase tracking-widest border border-amber-200">Függőben</span>
+                                            )}
+                                        </td>
                                         <td class="px-10 py-8 text-right">
                                             <button class="del-booking p-4 bg-slate-50 text-slate-300 hover:text-red-500 transition-all rounded-full" data-id={b.id}>
                                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
@@ -155,12 +172,12 @@ if (isAuthenticated) {
 
                     <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
                         {galleryItems.map((item) => (
-                            <div class="group relative aspect-[4/5] rounded-[2rem] overflow-hidden bg-white shadow-lg border border-pink-50">
-                                <img src={item.src} alt={item.title} class="w-full h-full object-cover transition-transform group-hover:scale-110" />
+                            <div class="group relative aspect-[4/5] rounded-[2rem] overflow-hidden bg-white shadow-lg border border-pink-50 transition-all hover:shadow-2xl">
+                                <img src={item.src} alt={item.title} class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
                                 <div class="absolute inset-0 bg-red-600/80 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-all">
-                                    <button class="del-gallery-item py-3 px-6 bg-white text-red-600 font-bold rounded-xl text-xs" data-id={item.id} data-path={item.storage_path}>Törlés</button>
+                                    <button class="del-gallery-item py-3 px-6 bg-white text-red-600 font-bold rounded-xl text-xs uppercase tracking-widest" data-id={item.id} data-path={item.storage_path}>Törlés</button>
                                 </div>
-                                <div class="absolute top-4 left-4 bg-white/90 px-3 py-1 rounded-full border border-pink-100">
+                                <div class="absolute top-4 left-4 bg-white/90 backdrop-blur-md px-3 py-1 rounded-full border border-pink-100">
                                     <span class="text-[10px] font-bold text-pink-600 uppercase tracking-widest">{item.category}</span>
                                 </div>
                             </div>
@@ -210,7 +227,10 @@ if (isAuthenticated) {
                 if (!confirm('Véglegesen törlöd?')) return;
                 const id = (btn as HTMLElement).dataset.id;
                 const res = await fetch(`/api/delete-booking?id=${id}`, { method: 'DELETE' });
-                if (res.ok) location.reload();
+                if (res.ok) {
+                    sessionStorage.setItem('activeAdminTab', 'sec-b');
+                    location.reload();
+                }
             });
         });
 
@@ -223,7 +243,10 @@ if (isAuthenticated) {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ name })
             });
-            if (res.ok) location.reload();
+            if (res.ok) {
+                sessionStorage.setItem('activeAdminTab', 'sec-p');
+                location.reload();
+            }
         });
 
         document.querySelectorAll('.add-new-price').forEach(btn => {
@@ -239,7 +262,10 @@ if (isAuthenticated) {
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ category_id, service_name, description, price_value: parseInt(price_value) })
                 });
-                if (res.ok) location.reload();
+                if (res.ok) {
+                    sessionStorage.setItem('activeAdminTab', 'sec-p');
+                    location.reload();
+                }
             });
         });
 
@@ -256,6 +282,7 @@ if (isAuthenticated) {
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ id, service_name, description, price_value: parseInt(price_value) })
                 });
+                sessionStorage.setItem('activeAdminTab', 'sec-p');
                 location.reload();
             });
         });
@@ -265,6 +292,7 @@ if (isAuthenticated) {
                 if(!confirm('Törlöd?')) return;
                 const id = (btn as HTMLElement).dataset.id;
                 await fetch(`/api/services?id=${id}`, { method: 'DELETE' });
+                sessionStorage.setItem('activeAdminTab', 'sec-p');
                 location.reload();
             });
         });
@@ -274,6 +302,7 @@ if (isAuthenticated) {
                 if(!confirm('Mindent törölni fog! Biztos?')) return;
                 const id = (btn as HTMLElement).dataset.id;
                 await fetch(`/api/categories?id=${id}`, { method: 'DELETE' });
+                sessionStorage.setItem('activeAdminTab', 'sec-p');
                 location.reload();
             });
         });
@@ -292,20 +321,26 @@ if (isAuthenticated) {
 
             btn.disabled = true; btn.innerText = "Feltöltés...";
 
-            const fileName = `${Date.now()}-${file.name.replace(/\s/g, '_')}`;
-            const { error: sError } = await supabase.storage.from('gallery').upload(fileName, file);
+            try {
+                const fileName = `${Date.now()}-${file.name.replace(/\s/g, '_')}`;
+                const { error: sError } = await supabase.storage.from('gallery').upload(fileName, file);
 
-            if (!sError) {
-                const { data: { publicUrl } } = supabase.storage.from('gallery').getPublicUrl(fileName);
-                await supabase.from('gallery').insert([{
-                    title: titleInput.value,
-                    category: categoryInput.value,
-                    src: publicUrl,
-                    storage_path: fileName
-                }]);
-                location.reload();
-            } else {
-                alert('Hiba: ' + sError.message);
+                if (!sError) {
+                    const { data: { publicUrl } } = supabase.storage.from('gallery').getPublicUrl(fileName);
+                    await supabase.from('gallery').insert([{
+                        title: titleInput.value,
+                        category: categoryInput.value,
+                        src: publicUrl,
+                        storage_path: fileName
+                    }]);
+                    sessionStorage.setItem('activeAdminTab', 'sec-g');
+                    location.reload();
+                } else {
+                    alert('Hiba: ' + sError.message);
+                    btn.disabled = false;
+                }
+            } catch (err) {
+                alert('Váratlan hiba történt.');
                 btn.disabled = false;
             }
         });
@@ -318,6 +353,7 @@ if (isAuthenticated) {
                 if (id && path) {
                     await supabase.storage.from('gallery').remove([path]);
                     await supabase.from('gallery').delete().eq('id', id);
+                    sessionStorage.setItem('activeAdminTab', 'sec-g');
                     location.reload();
                 }
             });
