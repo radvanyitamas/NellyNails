@@ -3,7 +3,9 @@ import tailwind from "@astrojs/tailwind";
 import vercel from "@astrojs/vercel";
 
 export default defineConfig({
-  integrations: [tailwind()],
+  integrations: [tailwind({
+    applyBaseStyles: false, // Ez megakadályozza a PostCSS duplázást
+  })],
   output: 'server',
   adapter: vercel()
 });

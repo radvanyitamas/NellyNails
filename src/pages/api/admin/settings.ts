@@ -4,7 +4,7 @@ import { supabase } from '../../../lib/supabase';
 export const PATCH: APIRoute = async ({ request }) => {
   const { pw, contact, hours } = await request.json();
 
-  if (pw !== process.env.ADMIN_PASSWORD) {
+  if (pw !== import.meta.env.ADMIN_PASSWORD) {
     return new Response(null, { status: 401 });
   }
 
