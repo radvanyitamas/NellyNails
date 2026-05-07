@@ -2,7 +2,7 @@
 import Layout from '../layouts/Layout.astro';
 import { supabase } from '../lib/supabase';
 
-const ADMIN_PASSWORD = "NellyAdmin2026"; 
+const ADMIN_PASSWORD = import.meta.env.ADMIN_PASSWORD; 
 const authCookie = Astro.cookies.get('admin_auth')?.value;
 const isAuthenticated = authCookie === ADMIN_PASSWORD;
 
@@ -15,74 +15,245 @@ if (Astro.request.method === "POST") {
 }
 
 let bookings = [];
+let categories = [];
+
 if (isAuthenticated) {
-    const { data } = await supabase.from('bookings').select('*').order('booking_date', { ascending: true });
-    bookings = data || [];
+    const { data: bData } = await supabase.from('bookings').select('*').order('booking_date', { ascending: true });
+    const { data: cData } = await supabase.from('price_categories').select('*, prices(*)').order('display_order', { ascending: true });
+    bookings = bData || [];
+    categories = cData || [];
 }
 ---
 
-<Layout title="Admin Kezelőpult">
+<Layout title="Vezérlőpult">
     <div class="min-h-screen bg-[#fdf2f8] font-sans pb-20">
         {!isAuthenticated ? (
             <div class="flex items-center justify-center pt-32 px-6">
                 <div class="max-w-md w-full bg-white rounded-[3rem] p-12 shadow-2xl border border-pink-100 text-center">
-                    <h1 class="text-3xl font-serif font-bold text-slate-900 mb-8">Admin Belépés</h1>
+                    <h1 class="text-3xl font-serif font-bold text-slate-900 mb-8 tracking-tight">Admin Belépés</h1>
                     <form method="POST" class="space-y-6">
-                        <input type="password" name="password" placeholder="Jelszó" class="w-full p-5 rounded-2xl bg-slate-50 border-none ring-1 ring-slate-200 outline-none text-center font-bold" />
-                        <button class="w-full py-5 bg-[#db2777] text-white font-bold rounded-2xl shadow-lg">Belépés</button>
+                        <input type="password" name="password" placeholder="Jelszó" required class="w-full p-5 rounded-2xl bg-slate-50 border-none ring-1 ring-slate-200 outline-none text-center font-bold focus:ring-2 focus:ring-pink-500 transition-all" />
+                        <button type="submit" class="w-full py-5 bg-[#db2777] text-white font-bold rounded-2xl shadow-lg shadow-pink-200 active:scale-95 transition-all">Belépés</button>
                     </form>
                 </div>
             </div>
         ) : (
             <div class="max-w-6xl mx-auto px-6 pt-10">
-                <div class="flex justify-between items-center mb-16">
-                    <div class="flex items-center gap-4">
-                        <h1 class="text-5xl font-serif font-bold text-slate-900">Foglalások</h1>
-                        <div class="bg-white px-6 py-2 rounded-full shadow-sm border border-pink-100 font-bold text-slate-700">
-                             Összesen: {bookings.length}
-                        </div>
+                <div class="flex justify-between items-center mb-10">
+                    <div>
+                        <h1 class="text-5xl font-serif font-bold text-slate-900 tracking-tight italic">Vezérlőpult</h1>
+                        <p class="text-pink-500 font-medium mt-2 italic">Szia Nelly! ✨</p>
                     </div>
-                    <button onclick="document.cookie='admin_auth=;path=/;expires=Thu...';location.reload();" class="px-6 py-2 bg-white text-pink-600 font-bold rounded-full shadow-sm border border-pink-100 hover:bg-pink-50 transition-all text-xs uppercase tracking-widest">Kijelentkezés</button>
+                    <button onclick="document.cookie='admin_auth=;path=/;expires=Thu, 01 Jan 1970 00:00:01 GMT;';location.reload();" class="px-6 py-2 bg-white text-pink-600 font-bold rounded-full shadow-sm border border-pink-100 text-xs uppercase tracking-widest hover:bg-pink-50 transition-all">Kijelentkezés</button>
                 </div>
 
-                <div class="bg-white rounded-[3rem] shadow-2xl shadow-pink-200/20 border border-pink-50 overflow-hidden p-4">
-                    <table class="w-full text-left">
-                        <thead class="text-[10px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-50">
-                            <tr>
-                                <th class="px-10 py-6">Időpont & Státusz</th>
-                                <th class="px-10 py-6">Vendég</th>
-                                <th class="px-10 py-6 text-right">Művelet</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-slate-50">
-                            {bookings.map((b) => (
-                                <tr class="hover:bg-pink-50/10 transition-all">
-                                    <td class="px-10 py-8">
-                                        <div class="font-bold text-slate-900 text-lg">
-                                            {new Date(b.booking_date).toLocaleString('hu-HU', { month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
-                                        </div>
-                                        <div class={`mt-2 inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${
-                                            b.status === 'confirmed' ? 'bg-green-50 text-green-600' : 'bg-amber-50 text-amber-600'
-                                        }`}>
-                                            <span class={`w-1.5 h-1.5 rounded-full ${b.status === 'confirmed' ? 'bg-green-500' : 'bg-amber-500'}`}></span>
-                                            {b.status === 'confirmed' ? 'Megerősítve' : 'Függőben'}
-                                        </div>
-                                    </td>
-                                    <td class="px-10 py-8">
-                                        <div class="font-bold text-slate-800 text-lg">{b.name}</div>
-                                        <div class="text-sm text-slate-400 font-medium mt-1">+{b.phone} | {b.email}</div>
-                                    </td>
-                                    <td class="px-10 py-8 text-right">
-                                        <button class="delete-btn p-4 bg-slate-50 text-slate-300 hover:bg-red-50 hover:text-red-500 rounded-full transition-all" data-id={b.id}>
-                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-                                        </button>
-                                    </td>
+                <div class="flex gap-4 mb-8">
+                    <button id="tab-b" class="tab-btn px-8 py-3 rounded-full font-bold transition-all bg-[#db2777] text-white shadow-lg" data-target="sec-b">Foglalások</button>
+                    <button id="tab-p" class="tab-btn px-8 py-3 rounded-full font-bold transition-all bg-white text-slate-500 border border-pink-100" data-target="sec-p">Árazás & Kategóriák</button>
+                </div>
+
+                <div id="sec-b" class="admin-section block animate-fade-in">
+                    <div class="bg-white rounded-[3rem] shadow-2xl shadow-pink-200/20 border border-pink-50 overflow-hidden">
+                        <table class="w-full text-left">
+                            <thead class="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] border-b border-slate-50">
+                                <tr>
+                                    <th class="px-10 py-6">Időpont</th>
+                                    <th class="px-10 py-6">Vendég</th>
+                                    <th class="px-10 py-6 text-right">Művelet</th>
                                 </tr>
-                            ))}
-                        </tbody>
-                    </table>
+                            </thead>
+                            <tbody class="divide-y divide-slate-50">
+                                {bookings.map((b) => (
+                                    <tr class="hover:bg-pink-50/10 transition-all">
+                                        <td class="px-10 py-8 font-bold text-slate-900">
+                                            {new Date(b.booking_date).toLocaleString('hu-HU', { month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                                        </td>
+                                        <td class="px-10 py-8 font-bold text-slate-800">{b.name}<br/><span class="text-xs text-slate-400 font-normal italic">{b.phone}</span></td>
+                                        <td class="px-10 py-8 text-right">
+                                            <button class="del-booking p-4 bg-slate-50 text-slate-300 hover:text-red-500 transition-all rounded-full" data-id={b.id}>
+                                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div id="sec-p" class="admin-section hidden space-y-12 animate-fade-in">
+                    <div class="bg-slate-900 rounded-[3.5rem] p-12 text-white shadow-2xl relative overflow-hidden">
+                        <h2 class="text-3xl font-serif font-bold mb-6">Új kategória hozzáadása</h2>
+                        <div class="flex flex-col md:flex-row gap-4 relative z-10">
+                            <input type="text" id="new-cat-name" placeholder="Pl: Gél Lakk, Műköröm építés..." class="flex-1 p-5 rounded-2xl bg-white/10 border-none ring-1 ring-white/20 outline-none text-white focus:ring-2 focus:ring-pink-500 transition-all" />
+                            <button id="add-cat-btn" class="px-10 py-5 bg-pink-600 text-white font-bold rounded-2xl hover:bg-pink-500 transition-all shadow-xl active:scale-95">Létrehozás</button>
+                        </div>
+                    </div>
+
+                    {categories.map((cat) => (
+                        <div class="bg-white rounded-[3.5rem] p-10 md:p-14 shadow-xl border border-pink-50">
+                            <div class="flex justify-between items-center mb-10 border-b border-pink-50 pb-6">
+                                <h3 class="text-4xl font-serif font-bold text-slate-800 tracking-tight">{cat.name}</h3>
+                                <button class="del-cat px-4 py-2 bg-red-50 text-red-400 hover:text-red-600 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all" data-id={cat.id}>Törlés</button>
+                            </div>
+
+                            <div class="space-y-6">
+                                {cat.prices && cat.prices.map((item) => (
+                                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 p-5 bg-slate-50/50 rounded-3xl border border-slate-100 items-center">
+                                        <input type="text" value={item.service_name} class="service-name p-4 rounded-2xl border-none ring-1 ring-slate-200 outline-none focus:ring-2 focus:ring-pink-500 bg-white" />
+                                        <input type="text" value={item.description} placeholder="Leírás" class="service-desc p-4 rounded-2xl border-none ring-1 ring-slate-200 text-sm outline-none bg-white italic" />
+                                        <input type="number" value={item.price_value} class="service-price p-4 rounded-2xl border-none ring-1 ring-slate-200 font-bold text-pink-600 outline-none bg-white" />
+                                        <div class="flex gap-2">
+                                            <button class="save-price flex-1 py-4 bg-green-500 text-white rounded-2xl text-xs font-bold hover:bg-green-600 transition-all" data-id={item.id}>Mentés</button>
+                                            <button class="del-price p-4 bg-white text-red-300 hover:text-red-500 rounded-2xl border border-red-50 transition-all" data-id={item.id}>
+                                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                                            </button>
+                                        </div>
+                                    </div>
+                                ))}
+                                
+                                <div class="grid grid-cols-1 md:grid-cols-4 gap-4 p-8 bg-pink-50/20 rounded-[2.5rem] border-2 border-dashed border-pink-100 items-center mt-10">
+                                    <input type="text" placeholder="Új szolgáltatás" class="new-name p-4 rounded-2xl border-none ring-1 ring-pink-100 outline-none bg-white text-sm" />
+                                    <input type="text" placeholder="Leírás" class="new-desc p-4 rounded-2xl border-none ring-1 ring-pink-100 outline-none bg-white text-sm" />
+                                    <input type="number" placeholder="Ár" class="new-price p-4 rounded-2xl border-none ring-1 ring-pink-100 outline-none bg-white" />
+                                    <button class="add-new-price py-4 bg-slate-900 text-white rounded-2xl font-bold hover:bg-pink-600 transition-all shadow-lg" data-cat-id={cat.id}>+ Hozzáadás</button>
+                                </div>
+                            </div>
+                        </div>
+                    ))}
                 </div>
             </div>
         )}
     </div>
 </Layout>
+
+<script>
+    const tabs = document.querySelectorAll('.tab-btn');
+    const sections = document.querySelectorAll('.admin-section');
+
+    function showTab(targetId) {
+        sections.forEach(s => s.classList.add('hidden'));
+        const targetSection = document.getElementById(targetId);
+        if (targetSection) targetSection.classList.remove('hidden');
+
+        tabs.forEach(t => {
+            const isTarget = t.getAttribute('data-target') === targetId;
+            if (isTarget) {
+                t.classList.add('bg-[#db2777]', 'text-white', 'shadow-lg');
+                t.classList.remove('bg-white', 'text-slate-500');
+            } else {
+                t.classList.remove('bg-[#db2777]', 'text-white', 'shadow-lg');
+                t.classList.add('bg-white', 'text-slate-500');
+            }
+        });
+        sessionStorage.setItem('activeAdminTab', targetId);
+    }
+
+    const savedTab = sessionStorage.getItem('activeAdminTab') || 'sec-b';
+    showTab(savedTab);
+
+    tabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+            showTab(tab.getAttribute('data-target'));
+        });
+    });
+
+    const addCatBtn = document.getElementById('add-cat-btn');
+    addCatBtn?.addEventListener('click', async () => {
+        const name = (document.getElementById('new-cat-name') as HTMLInputElement).value;
+        if (!name) return alert('Kérlek adj meg egy nevet!');
+
+        const res = await fetch('/api/categories', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name })
+        });
+        if (res.ok) {
+            sessionStorage.setItem('activeAdminTab', 'sec-p');
+            location.reload();
+        }
+    });
+
+    document.querySelectorAll('.add-new-price').forEach(btn => {
+        btn.addEventListener('click', async () => {
+            const parent = btn.closest('.grid');
+            const category_id = (btn as HTMLElement).dataset.catId;
+            const service_name = (parent?.querySelector('.new-name') as HTMLInputElement).value;
+            const description = (parent?.querySelector('.new-desc') as HTMLInputElement).value;
+            const price_value = (parent?.querySelector('.new-price') as HTMLInputElement).value;
+
+            if(!service_name || !price_value) return alert('Név és Ár kötelező!');
+
+            const res = await fetch('/api/services', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ category_id, service_name, description, price_value: parseInt(price_value) })
+            });
+            if (res.ok) {
+                sessionStorage.setItem('activeAdminTab', 'sec-p');
+                location.reload();
+            }
+        });
+    });
+
+    document.querySelectorAll('.save-price').forEach(btn => {
+        btn.addEventListener('click', async () => {
+            const id = (btn as HTMLElement).dataset.id;
+            const parent = btn.closest('.grid');
+            const service_name = (parent?.querySelector('.service-name') as HTMLInputElement).value;
+            const description = (parent?.querySelector('.service-desc') as HTMLInputElement).value;
+            const price_value = (parent?.querySelector('.service-price') as HTMLInputElement).value;
+
+            const res = await fetch('/api/services', {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id, service_name, description, price_value: parseInt(price_value) })
+            });
+            if(res.ok) {
+                sessionStorage.setItem('activeAdminTab', 'sec-p');
+                location.reload();
+            }
+        });
+    });
+
+    document.querySelectorAll('.del-price').forEach(btn => {
+        btn.addEventListener('click', async () => {
+            if(!confirm('Törlöd?')) return;
+            const id = (btn as HTMLElement).dataset.id;
+            const res = await fetch(`/api/services?id=${id}`, { method: 'DELETE' });
+            if(res.ok) {
+                sessionStorage.setItem('activeAdminTab', 'sec-p');
+                location.reload();
+            }
+        });
+    });
+
+    document.querySelectorAll('.del-cat').forEach(btn => {
+        btn.addEventListener('click', async () => {
+            if(!confirm('MINDEN árat törölni fog! Biztos?')) return;
+            const id = (btn as HTMLElement).dataset.id;
+            const res = await fetch(`/api/categories?id=${id}`, { method: 'DELETE' });
+            if(res.ok) {
+                sessionStorage.setItem('activeAdminTab', 'sec-p');
+                location.reload();
+            }
+        });
+    });
+
+    document.querySelectorAll('.del-booking').forEach(btn => {
+        btn.addEventListener('click', async () => {
+            if(!confirm('Végleges törlés?')) return;
+            const id = (btn as HTMLElement).dataset.id;
+            const res = await fetch(`/api/delete-booking?id=${id}`, { method: 'DELETE' });
+            if(res.ok) {
+                sessionStorage.setItem('activeAdminTab', 'sec-b');
+                location.reload();
+            }
+        });
+    });
+</script>
+
+<style>
+    .animate-fade-in { animation: fadeIn 0.3s ease-out; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+</style>
