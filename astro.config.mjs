@@ -1,11 +1,12 @@
 import { defineConfig } from 'astro/config';
 import tailwind from "@astrojs/tailwind";
-import vercel from "@astrojs/vercel"; // Ellenőrizd, hogy nincs itt /serverless vagy más!
+import vercel from "@astrojs/vercel";
 
 export default defineConfig({
   integrations: [tailwind()],
-  output: 'server', // Maradjon szerver mód az API-k miatt
+  output: 'server',
   adapter: vercel({
-    webAnalytics: { enabled: true } // Ez segít a Vercel-nek felismerni a konfigurációt
+    // Ez kényszeríti az Astro-t, hogy a Vercel szabvány szerint építse fel a szervert
+    deploymentStrategy: 'serverless' 
   })
 });
