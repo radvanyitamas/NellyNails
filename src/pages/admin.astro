@@ -2,7 +2,7 @@
 import Layout from '../layouts/Layout.astro';
 import { supabase } from '../lib/supabase';
 
-// Az ADMIN_PASSWORD maradhat titkos (nincs PUBLIC_ előtag), mert csak itt, a szerveren kell
+// Hitelesítés kezelése
 const ADMIN_PASSWORD = import.meta.env.ADMIN_PASSWORD; 
 const authCookie = Astro.cookies.get('admin_auth')?.value;
 const isAuthenticated = authCookie === ADMIN_PASSWORD;
@@ -16,24 +16,29 @@ if (Astro.request.method === "POST") {
 }
 
 let bookings = [];
-let categories = [];
+let priceCategories = [];
 let galleryItems = [];
+let uniqueCategories = [];
 
 if (isAuthenticated) {
-    // Itt a supabase kliens már az új PUBLIC_ változókat használja a lib/supabase.ts-ből
+    // Adatok lekérése a szerveren
     const { data: bData } = await supabase.from('bookings').select('*').order('booking_date', { ascending: true });
     const { data: cData } = await supabase.from('price_categories').select('*, prices(*)').order('display_order', { ascending: true });
     const { data: gData } = await supabase.from('gallery').select('*').order('created_at', { ascending: false });
     
     bookings = bData || [];
-    categories = cData || [];
+    priceCategories = cData || [];
     galleryItems = gData || [];
+
+    // Kategóriák kigyűjtése a galéria javaslatokhoz
+    uniqueCategories = [...new Set(galleryItems.map(item => item.category))];
 }
 ---
 
 <Layout title="Vezérlőpult">
     <div class="min-h-screen bg-[#fdf2f8] font-sans pb-20">
         {!isAuthenticated ? (
+            /* BELÉPŐ FORM */
             <div class="flex items-center justify-center pt-32 px-6">
                 <div class="max-w-md w-full bg-white rounded-[3rem] p-12 shadow-2xl border border-pink-100 text-center">
                     <h1 class="text-3xl font-serif font-bold text-slate-900 mb-8 tracking-tight">Admin Belépés</h1>
@@ -44,6 +49,7 @@ if (isAuthenticated) {
                 </div>
             </div>
         ) : (
+            /* ADMIN FELÜLET */
             <div class="max-w-6xl mx-auto px-6 pt-10">
                 <div class="flex justify-between items-center mb-10">
                     <div>
@@ -54,27 +60,21 @@ if (isAuthenticated) {
                 </div>
 
                 <div class="flex flex-wrap gap-4 mb-8">
-                    <button id="tab-b" class="tab-btn px-8 py-3 rounded-full font-bold transition-all bg-[#db2777] text-white shadow-lg" data-target="sec-b">Foglalások</button>
-                    <button id="tab-p" class="tab-btn px-8 py-3 rounded-full font-bold transition-all bg-white text-slate-500 border border-pink-100" data-target="sec-p">Árazás & Kategóriák</button>
-                    <button id="tab-g" class="tab-btn px-8 py-3 rounded-full font-bold transition-all bg-white text-slate-500 border border-pink-100" data-target="sec-g">Galéria Kezelő</button>
+                    <button class="tab-btn px-8 py-3 rounded-full font-bold transition-all bg-[#db2777] text-white shadow-lg" data-target="sec-b">Foglalások</button>
+                    <button class="tab-btn px-8 py-3 rounded-full font-bold transition-all bg-white text-slate-500 border border-pink-100" data-target="sec-p">Árazás & Kategóriák</button>
+                    <button class="tab-btn px-8 py-3 rounded-full font-bold transition-all bg-white text-slate-500 border border-pink-100" data-target="sec-g">Galéria Kezelő</button>
                 </div>
 
                 <div id="sec-b" class="admin-section block animate-fade-in">
                     <div class="bg-white rounded-[3rem] shadow-2xl shadow-pink-200/20 border border-pink-50 overflow-hidden">
                         <table class="w-full text-left">
                             <thead class="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] border-b border-slate-50">
-                                <tr>
-                                    <th class="px-10 py-6">Időpont</th>
-                                    <th class="px-10 py-6">Vendég</th>
-                                    <th class="px-10 py-6 text-right">Művelet</th>
-                                </tr>
+                                <tr><th class="px-10 py-6">Időpont</th><th class="px-10 py-6">Vendég</th><th class="px-10 py-6 text-right">Művelet</th></tr>
                             </thead>
                             <tbody class="divide-y divide-slate-50">
                                 {bookings.map((b) => (
                                     <tr class="hover:bg-pink-50/10 transition-all">
-                                        <td class="px-10 py-8 font-bold text-slate-900">
-                                            {new Date(b.booking_date).toLocaleString('hu-HU', { month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
-                                        </td>
+                                        <td class="px-10 py-8 font-bold text-slate-900">{new Date(b.booking_date).toLocaleString('hu-HU', { month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</td>
                                         <td class="px-10 py-8 font-bold text-slate-800">{b.name}<br/><span class="text-xs text-slate-400 font-normal italic">{b.phone}</span></td>
                                         <td class="px-10 py-8 text-right">
                                             <button class="del-booking p-4 bg-slate-50 text-slate-300 hover:text-red-500 transition-all rounded-full" data-id={b.id}>
@@ -97,7 +97,7 @@ if (isAuthenticated) {
                         </div>
                     </div>
 
-                    {categories.map((cat) => (
+                    {priceCategories.map((cat) => (
                         <div class="bg-white rounded-[3.5rem] p-10 md:p-14 shadow-xl border border-pink-50">
                             <div class="flex justify-between items-center mb-10 border-b border-pink-50 pb-6">
                                 <h3 class="text-4xl font-serif font-bold text-slate-800 tracking-tight">{cat.name}</h3>
@@ -133,37 +133,34 @@ if (isAuthenticated) {
                 <div id="sec-g" class="admin-section hidden space-y-12 animate-fade-in">
                     <div class="bg-white rounded-[3.5rem] p-10 md:p-12 shadow-2xl border border-pink-100 relative overflow-hidden">
                         <h2 class="text-4xl font-serif font-bold text-slate-900 mb-8 tracking-tight">Új munka hozzáadása</h2>
-                        
                         <form id="gallery-upload-form" class="grid grid-cols-1 md:grid-cols-2 gap-6 relative z-10">
                             <div class="space-y-2">
                                 <label class="text-[10px] uppercase tracking-widest font-bold text-slate-400 ml-4">Kép címe</label>
-                                <input type="text" id="g-title" placeholder="Pl: Rose Gold Csillogás" required class="w-full p-5 rounded-2xl bg-slate-50 border-none ring-1 ring-slate-200 focus:ring-2 focus:ring-pink-500 outline-none transition-all" />
+                                <input type="text" id="g-title" placeholder="Pl: Rose Gold Csillogás" required class="w-full p-5 rounded-2xl bg-slate-50 border-none ring-1 ring-slate-200 outline-none transition-all" />
                             </div>
                             <div class="space-y-2">
-                                <label class="text-[10px] uppercase tracking-widest font-bold text-slate-400 ml-4">Kategória</label>
-                                <select id="g-category" class="w-full p-5 rounded-2xl bg-slate-50 border-none ring-1 ring-slate-200 focus:ring-2 focus:ring-pink-500 outline-none transition-all appearance-none cursor-pointer">
-                                    <option value="Zselé építés">Zselé építés</option>
-                                    <option value="Gél lakk">Gél lakk</option>
-                                    <option value="Díszített">Díszített</option>
-                                    <option value="Francia">Francia</option>
-                                </select>
+                                <label class="text-[10px] uppercase tracking-widest font-bold text-slate-400 ml-4">Kategória (Válassz vagy írj újat)</label>
+                                <input list="category-suggestions" id="g-category" placeholder="Pl: Zselé építés..." required class="w-full p-5 rounded-2xl bg-slate-50 border-none ring-1 ring-slate-200 outline-none transition-all" />
+                                <datalist id="category-suggestions">
+                                    {uniqueCategories.map(cat => <option value={cat} />)}
+                                </datalist>
                             </div>
                             <div class="md:col-span-2 space-y-2">
                                 <label class="text-[10px] uppercase tracking-widest font-bold text-slate-400 ml-4">Fotó kiválasztása</label>
-                                <input type="file" id="g-file" accept="image/*" required class="w-full p-5 rounded-2xl bg-pink-50/30 border-2 border-dashed border-pink-100 text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-bold file:bg-pink-600 file:text-white hover:file:bg-pink-700 cursor-pointer" />
+                                <input type="file" id="g-file" accept="image/*" required class="w-full p-5 rounded-2xl bg-pink-50/30 border-2 border-dashed border-pink-100 text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-bold file:bg-pink-600 file:text-white" />
                             </div>
-                            <button type="submit" id="g-submit-btn" class="md:col-span-2 py-6 bg-pink-600 text-white font-bold rounded-3xl shadow-xl shadow-pink-200 hover:bg-pink-700 active:scale-[0.98] transition-all">Kép feltöltése a referenciák közé</button>
+                            <button type="submit" id="g-submit-btn" class="md:col-span-2 py-6 bg-pink-600 text-white font-bold rounded-3xl shadow-xl shadow-pink-200 active:scale-95 transition-all">Kép mentése</button>
                         </form>
                     </div>
 
                     <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
                         {galleryItems.map((item) => (
-                            <div class="group relative aspect-[4/5] rounded-[2rem] overflow-hidden bg-white shadow-lg border border-pink-50 transition-all hover:shadow-2xl">
-                                <img src={item.src} alt={item.title} class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
-                                <div class="absolute inset-0 bg-linear-to-t from-red-600/90 via-red-600/20 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-300 flex flex-col justify-end p-6">
-                                    <button class="del-gallery-item w-full py-3 bg-white text-red-600 font-bold rounded-xl text-xs uppercase tracking-widest" data-id={item.id} data-path={item.storage_path}>Törlés</button>
+                            <div class="group relative aspect-[4/5] rounded-[2rem] overflow-hidden bg-white shadow-lg border border-pink-50">
+                                <img src={item.src} alt={item.title} class="w-full h-full object-cover transition-transform group-hover:scale-110" />
+                                <div class="absolute inset-0 bg-red-600/80 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-all">
+                                    <button class="del-gallery-item py-3 px-6 bg-white text-red-600 font-bold rounded-xl text-xs" data-id={item.id} data-path={item.storage_path}>Törlés</button>
                                 </div>
-                                <div class="absolute top-4 left-4 bg-white/90 backdrop-blur-md px-3 py-1 rounded-full border border-pink-100">
+                                <div class="absolute top-4 left-4 bg-white/90 px-3 py-1 rounded-full border border-pink-100">
                                     <span class="text-[10px] font-bold text-pink-600 uppercase tracking-widest">{item.category}</span>
                                 </div>
                             </div>
@@ -178,19 +175,18 @@ if (isAuthenticated) {
 <script>
     import { supabase } from '../lib/supabase';
 
-    // Várunk a betöltésre, hogy minden gomb elérhető legyen
     document.addEventListener('DOMContentLoaded', () => {
         const tabs = document.querySelectorAll('.tab-btn');
         const sections = document.querySelectorAll('.admin-section');
 
-        function showTab(targetId) {
+        // TAB VÁLTÁS
+        function showTab(targetId: string) {
             sections.forEach(s => s.classList.add('hidden'));
-            const targetSection = document.getElementById(targetId);
-            if (targetSection) targetSection.classList.remove('hidden');
-
+            const target = document.getElementById(targetId);
+            if (target) target.classList.remove('hidden');
+            
             tabs.forEach(t => {
-                const isTarget = t.getAttribute('data-target') === targetId;
-                if (isTarget) {
+                if (t.getAttribute('data-target') === targetId) {
                     t.classList.add('bg-[#db2777]', 'text-white', 'shadow-lg');
                     t.classList.remove('bg-white', 'text-slate-500');
                 } else {
@@ -205,57 +201,23 @@ if (isAuthenticated) {
         showTab(savedTab);
 
         tabs.forEach(tab => {
-            tab.addEventListener('click', () => showTab(tab.getAttribute('data-target')));
+            tab.addEventListener('click', () => showTab(tab.getAttribute('data-target') || 'sec-b'));
         });
 
-        // GALÉRIA FELTÖLTÉS
-        const galleryForm = document.getElementById('gallery-upload-form') as HTMLFormElement;
-        galleryForm?.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const btn = document.getElementById('g-submit-btn') as HTMLButtonElement;
-            const fileInput = document.getElementById('g-file') as HTMLInputElement;
-            const titleInput = document.getElementById('g-title') as HTMLInputElement;
-            const catSelect = document.getElementById('g-category') as HTMLSelectElement;
-
-            const file = fileInput.files?.[0];
-            if (!file) return;
-
-            btn.disabled = true;
-            btn.innerText = "Feltöltés...";
-
-            const fileName = `${Date.now()}-${file.name.replace(/\s/g, '_')}`;
-            const { data: sData, error: sError } = await supabase.storage.from('gallery').upload(fileName, file);
-
-            if (!sError) {
-                const { data: { publicUrl } } = supabase.storage.from('gallery').getPublicUrl(fileName);
-                await supabase.from('gallery').insert([{
-                    title: titleInput.value,
-                    category: catSelect.value,
-                    src: publicUrl,
-                    storage_path: fileName
-                }]);
-                location.reload();
-            } else {
-                alert('Hiba: ' + sError.message);
-                btn.disabled = false;
-            }
-        });
-
-        // GALÉRIA TÖRLÉS
-        document.querySelectorAll('.del-gallery-item').forEach(btn => {
+        // 1. FOGLALÁS TÖRLÉSE
+        document.querySelectorAll('.del-booking').forEach(btn => {
             btn.addEventListener('click', async () => {
-                if (!confirm('Törlöd?')) return;
+                if (!confirm('Véglegesen törlöd?')) return;
                 const id = (btn as HTMLElement).dataset.id;
-                const path = (btn as HTMLElement).dataset.path;
-                await supabase.storage.from('gallery').remove([path]);
-                await supabase.from('gallery').delete().eq('id', id);
-                location.reload();
+                const res = await fetch(`/api/delete-booking?id=${id}`, { method: 'DELETE' });
+                if (res.ok) location.reload();
             });
         });
 
-        // KATEGÓRIA HOZZÁADÁSA
+        // 2. ÁRAZÁS LOGIKA
         document.getElementById('add-cat-btn')?.addEventListener('click', async () => {
             const name = (document.getElementById('new-cat-name') as HTMLInputElement).value;
+            if (!name) return;
             const res = await fetch('/api/categories', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -264,7 +226,6 @@ if (isAuthenticated) {
             if (res.ok) location.reload();
         });
 
-        // SZOLGÁLTATÁS HOZZÁADÁSA
         document.querySelectorAll('.add-new-price').forEach(btn => {
             btn.addEventListener('click', async () => {
                 const parent = btn.closest('.grid');
@@ -282,7 +243,6 @@ if (isAuthenticated) {
             });
         });
 
-        // ÁR MENTÉSE
         document.querySelectorAll('.save-price').forEach(btn => {
             btn.addEventListener('click', async () => {
                 const id = (btn as HTMLElement).dataset.id;
@@ -300,33 +260,66 @@ if (isAuthenticated) {
             });
         });
 
-        // ÁR TÖRLÉSE
         document.querySelectorAll('.del-price').forEach(btn => {
             btn.addEventListener('click', async () => {
                 if(!confirm('Törlöd?')) return;
                 const id = (btn as HTMLElement).dataset.id;
-                const res = await fetch(`/api/services?id=${id}`, { method: 'DELETE' });
-                if(res.ok) location.reload();
+                await fetch(`/api/services?id=${id}`, { method: 'DELETE' });
+                location.reload();
             });
         });
 
-        // KATEGÓRIA TÖRLÉSE
         document.querySelectorAll('.del-cat').forEach(btn => {
             btn.addEventListener('click', async () => {
-                if(!confirm('Mindent töröl! Biztos?')) return;
+                if(!confirm('Mindent törölni fog! Biztos?')) return;
                 const id = (btn as HTMLElement).dataset.id;
-                const res = await fetch(`/api/categories?id=${id}`, { method: 'DELETE' });
-                if(res.ok) location.reload();
+                await fetch(`/api/categories?id=${id}`, { method: 'DELETE' });
+                location.reload();
             });
         });
 
-        // FOGLALÁS TÖRLÉSE
-        document.querySelectorAll('.del-booking').forEach(btn => {
+        // 3. GALÉRIA LOGIKA
+        const galleryForm = document.getElementById('gallery-upload-form') as HTMLFormElement;
+        galleryForm?.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('g-submit-btn') as HTMLButtonElement;
+            const fileInput = document.getElementById('g-file') as HTMLInputElement;
+            const titleInput = document.getElementById('g-title') as HTMLInputElement;
+            const categoryInput = document.getElementById('g-category') as HTMLInputElement;
+
+            const file = fileInput.files?.[0];
+            if (!file) return;
+
+            btn.disabled = true; btn.innerText = "Feltöltés...";
+
+            const fileName = `${Date.now()}-${file.name.replace(/\s/g, '_')}`;
+            const { error: sError } = await supabase.storage.from('gallery').upload(fileName, file);
+
+            if (!sError) {
+                const { data: { publicUrl } } = supabase.storage.from('gallery').getPublicUrl(fileName);
+                await supabase.from('gallery').insert([{
+                    title: titleInput.value,
+                    category: categoryInput.value,
+                    src: publicUrl,
+                    storage_path: fileName
+                }]);
+                location.reload();
+            } else {
+                alert('Hiba: ' + sError.message);
+                btn.disabled = false;
+            }
+        });
+
+        document.querySelectorAll('.del-gallery-item').forEach(btn => {
             btn.addEventListener('click', async () => {
-                if(!confirm('Törlöd?')) return;
+                if (!confirm('Törlöd a képet?')) return;
                 const id = (btn as HTMLElement).dataset.id;
-                const res = await fetch(`/api/delete-booking?id=${id}`, { method: 'DELETE' });
-                if(res.ok) location.reload();
+                const path = (btn as HTMLElement).dataset.path;
+                if (id && path) {
+                    await supabase.storage.from('gallery').remove([path]);
+                    await supabase.from('gallery').delete().eq('id', id);
+                    location.reload();
+                }
             });
         });
     });

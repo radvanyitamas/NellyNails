@@ -2,14 +2,17 @@
 // src/components/Gallery.astro
 import { supabase } from '../lib/supabase';
 
-const categories = ["Összes", "Zselé építés", "Gél lakk", "Díszített", "Francia"];
-
-// Adatok lekérése a Supabase-ből
+// 1. Képek lekérése az adatbázisból (legfrissebbek elöl)
 const { data: works = [] } = await supabase
   .from('gallery')
   .select('*')
   .order('created_at', { ascending: false });
+
+// 2. Egyedi kategóriák kigyűjtése a gombokhoz a feltöltött képek alapján
+const rawCategories = [...new Set(works.map(work => work.category))];
+const categories = ["Összes", ...rawCategories];
 ---
+
 <section id="munkak" class="py-24 px-4 bg-white relative">
   <div class="max-w-6xl mx-auto">
     <div class="text-center mb-16">
@@ -78,100 +81,107 @@ const { data: works = [] } = await supabase
 </section>
 
 <script>
-  // Típus-kényszerítés (casting) a TypeScript hibák elkerülésére
-  const filterButtons = document.querySelectorAll('.filter-btn') as NodeListOf<HTMLButtonElement>;
-  const galleryItems = document.querySelectorAll('.gallery-item') as NodeListOf<HTMLElement>;
-  const lightbox = document.getElementById('lightbox') as HTMLElement;
-  const lightboxImg = document.getElementById('lightbox-img') as HTMLImageElement;
-  const lightboxTitle = document.getElementById('lightbox-title') as HTMLElement;
-  const lightboxCat = document.getElementById('lightbox-cat') as HTMLElement;
-  const closeBtn = document.getElementById('close-lightbox') as HTMLButtonElement;
-  const prevBtn = document.getElementById('prev-btn') as HTMLButtonElement;
-  const nextBtn = document.getElementById('next-btn') as HTMLButtonElement;
+  function initGallery() {
+    const filterButtons = document.querySelectorAll('.filter-btn') as NodeListOf<HTMLButtonElement>;
+    const galleryItems = document.querySelectorAll('.gallery-item') as NodeListOf<HTMLElement>;
+    const lightbox = document.getElementById('lightbox') as HTMLElement;
+    const lightboxImg = document.getElementById('lightbox-img') as HTMLImageElement;
+    const lightboxTitle = document.getElementById('lightbox-title') as HTMLElement;
+    const lightboxCat = document.getElementById('lightbox-cat') as HTMLElement;
+    const closeBtn = document.getElementById('close-lightbox') as HTMLButtonElement;
+    const prevBtn = document.getElementById('prev-btn') as HTMLButtonElement;
+    const nextBtn = document.getElementById('next-btn') as HTMLButtonElement;
 
-  let currentVisibleItems: HTMLElement[] = [...galleryItems];
-  let currentIndex = 0;
+    if (!lightbox) return;
 
-  // --- SZŰRÉS LOGIKA ---
-  filterButtons.forEach(btn => {
-    btn.addEventListener('click', () => {
-      const filter = btn.getAttribute('data-filter');
-      
-      // Gombok vizuális váltása
-      filterButtons.forEach(b => {
-        b.classList.remove('bg-pink-600', 'text-white', 'shadow-lg', 'border-pink-600');
-        b.classList.add('bg-white', 'text-slate-700', 'border-pink-100');
+    let currentVisibleItems: HTMLElement[] = Array.from(galleryItems);
+    let currentIndex = 0;
+
+    // --- SZŰRÉS ---
+    filterButtons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const filter = btn.getAttribute('data-filter');
+        
+        filterButtons.forEach(b => {
+          b.classList.remove('bg-pink-600', 'text-white', 'shadow-lg', 'border-pink-600');
+          b.classList.add('bg-white', 'text-slate-700', 'border-pink-100');
+        });
+        btn.classList.add('bg-pink-600', 'text-white', 'shadow-lg', 'border-pink-600');
+        btn.classList.remove('bg-white', 'text-slate-700', 'border-pink-100');
+
+        currentVisibleItems = [];
+        galleryItems.forEach(item => {
+          const itemCat = item.getAttribute('data-category');
+          if (filter === "Összes" || itemCat === filter) {
+            item.style.display = "block";
+            setTimeout(() => { item.style.opacity = "1"; }, 10);
+            currentVisibleItems.push(item);
+          } else {
+            item.style.opacity = "0";
+            setTimeout(() => { item.style.display = "none"; }, 300);
+          }
+        });
       });
-      btn.classList.add('bg-pink-600', 'text-white', 'shadow-lg', 'border-pink-600');
-      btn.classList.remove('bg-white', 'text-slate-700', 'border-pink-100');
+    });
 
-      // Elemek szűrése
-      currentVisibleItems = [];
-      galleryItems.forEach(item => {
-        const itemCat = item.getAttribute('data-category');
-        if (filter === "Összes" || itemCat === filter) {
-          item.style.display = "block";
-          setTimeout(() => { item.style.opacity = "1"; }, 10);
-          currentVisibleItems.push(item);
-        } else {
-          item.style.opacity = "0";
-          setTimeout(() => { item.style.display = "none"; }, 300);
+    // --- LIGHTBOX ---
+    const updateLightbox = (index: number) => {
+      const item = currentVisibleItems[index];
+      if (!item) return;
+
+      const src = item.getAttribute('data-src') || '';
+      const title = item.getAttribute('data-title') || '';
+      const cat = item.getAttribute('data-category') || '';
+
+      lightboxImg.src = src;
+      lightboxTitle.textContent = title;
+      lightboxCat.textContent = cat;
+      currentIndex = index;
+    };
+
+    galleryItems.forEach(item => {
+      item.addEventListener('click', () => {
+        const index = currentVisibleItems.indexOf(item);
+        if (index !== -1) {
+          updateLightbox(index);
+          lightbox.classList.remove('opacity-0', 'pointer-events-none');
         }
       });
     });
-  });
 
-  // --- LIGHTBOX LOGIKA ---
-  const updateLightbox = (index: number) => {
-    const item = currentVisibleItems[index];
-    if (!item) return;
+    const closeLightbox = () => {
+      lightbox.classList.add('opacity-0', 'pointer-events-none');
+      setTimeout(() => { lightboxImg.src = ""; }, 300);
+    };
+    
+    closeBtn?.addEventListener('click', closeLightbox);
+    lightbox?.addEventListener('click', (e) => { if(e.target === lightbox) closeLightbox(); });
 
-    const src = item.getAttribute('data-src') || '';
-    const title = item.getAttribute('data-title') || '';
-    const cat = item.getAttribute('data-category') || '';
-
-    lightboxImg.src = src;
-    lightboxTitle.textContent = title;
-    lightboxCat.textContent = cat;
-    currentIndex = index;
-  };
-
-  galleryItems.forEach(item => {
-    item.addEventListener('click', () => {
-      const index = currentVisibleItems.indexOf(item);
-      if (index !== -1) {
-        updateLightbox(index);
-        lightbox.classList.remove('opacity-0', 'pointer-events-none');
-      }
+    nextBtn?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (currentVisibleItems.length === 0) return;
+      currentIndex = (currentIndex + 1) % currentVisibleItems.length;
+      updateLightbox(currentIndex);
     });
-  });
 
-  const closeLightbox = () => {
-    lightbox.classList.add('opacity-0', 'pointer-events-none');
-    setTimeout(() => { lightboxImg.src = ""; }, 300); // Kép ürítése a következő nyitásig
-  };
-  
-  closeBtn?.addEventListener('click', closeLightbox);
-  lightbox?.addEventListener('click', (e) => { if(e.target === lightbox) closeLightbox(); });
+    prevBtn?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (currentVisibleItems.length === 0) return;
+      currentIndex = (currentIndex - 1 + currentVisibleItems.length) % currentVisibleItems.length;
+      updateLightbox(currentIndex);
+    });
 
-  nextBtn?.addEventListener('click', (e) => {
-    e.stopPropagation();
-    currentIndex = (currentIndex + 1) % currentVisibleItems.length;
-    updateLightbox(currentIndex);
-  });
+    window.addEventListener('keydown', (e) => {
+      if (lightbox.classList.contains('opacity-0')) return;
+      if (e.key === "Escape") closeLightbox();
+      if (e.key === "ArrowRight") nextBtn?.click();
+      if (e.key === "ArrowLeft") prevBtn?.click();
+    });
+  }
 
-  prevBtn?.addEventListener('click', (e) => {
-    e.stopPropagation();
-    currentIndex = (currentIndex - 1 + currentVisibleItems.length) % currentVisibleItems.length;
-    updateLightbox(currentIndex);
-  });
-
-  window.addEventListener('keydown', (e) => {
-    if (lightbox.classList.contains('opacity-0')) return;
-    if (e.key === "Escape") closeLightbox();
-    if (e.key === "ArrowRight") nextBtn.click();
-    if (e.key === "ArrowLeft") prevBtn.click();
-  });
+  // Inicializálás az oldal betöltésekor és View Transitions esetén is
+  document.addEventListener('DOMContentLoaded', initGallery);
+  document.addEventListener('astro:page-load', initGallery);
 </script>
 
 <style>
