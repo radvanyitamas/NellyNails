@@ -1,0 +1,59 @@
+---
+const services = [
+  { 
+    category: "Gél Lakk",
+    items: [
+      { name: "Egyszínű gél lakk", price: "6.500 Ft", desc: "Erősített alap, 2 hét tartósság" },
+      { name: "Francia / Ombre", price: "7.500 Ft", desc: "Klasszikus vagy színátmenetes" }
+    ]
+  },
+  { 
+    category: "Műköröm Építés",
+    items: [
+      { name: "Zselé építés (S)", price: "9.500 Ft", desc: "Egyszínű, sablonos technika" },
+      { name: "Zselé építés (M)", price: "10.500 Ft", desc: "Extrém forma vagy díszítés nélkül" },
+      { name: "Töltés", price: "8.500 Ft", desc: "3-4 hetes lenövés esetén" }
+    ]
+  }
+];
+---
+
+<section id="arak" class="py-24 px-4 bg-pink-50/30">
+  <div class="max-w-4xl mx-auto">
+    <div class="text-center mb-16">
+      <h2 class="text-4xl font-serif font-bold text-slate-900 mb-4">Szolgáltatások & Árak</h2>
+      <div class="w-20 h-1 bg-pink-500 mx-auto rounded-full"></div>
+    </div>
+
+    <div class="space-y-12">
+      {services.map((group) => (
+        <div class="bg-white p-8 md:p-12 rounded-[2.5rem] shadow-sm border border-pink-100">
+          <h3 class="text-2xl font-serif font-bold text-pink-600 mb-8 flex items-center">
+            <span class="mr-4">{group.category}</span>
+            <div class="grow h-px bg-pink-100"></div>
+          </h3>
+          
+          <div class="grid gap-8">
+            {group.items.map((item) => (
+              <div class="flex justify-between items-start group">
+                <div class="max-w-[70%]">
+                  <h4 class="text-lg font-semibold text-slate-800 group-hover:text-pink-600 transition-colors">
+                    {item.name}
+                  </h4>
+                  <p class="text-sm text-slate-500 mt-1 italic font-light">{item.desc}</p>
+                </div>
+                <div class="text-right">
+                  <span class="text-xl font-bold text-slate-900">{item.price}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+
+    <p class="text-center mt-12 text-slate-400 text-sm italic">
+      Az árak tájékoztató jellegűek. Extrém díszítés esetén felár lehetséges.
+    </p>
+  </div>
+</section>

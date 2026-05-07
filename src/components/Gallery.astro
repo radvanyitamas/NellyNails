@@ -1,0 +1,183 @@
+---
+// src/components/Gallery.astro
+const categories = ["Összes", "Zselé építés", "Gél lakk", "Díszített", "Francia"];
+
+const works = [
+  { id: 1, title: "Rose Gold Csillogás", category: "Zselé építés", src: "https://images.unsplash.com/photo-1632345031435-8727f6897d53?q=80&w=800" },
+  { id: 2, title: "Matte Black Minimal", category: "Gél lakk", src: "https://images.unsplash.com/photo-1604654894610-df63bc536371?q=80&w=800" },
+  { id: 3, title: "Tavaszi Virágok", category: "Díszített", src: "https://images.unsplash.com/photo-1519014816548-bf5fe059798b?q=80&w=800" },
+  { id: 4, title: "Klasszikus Francia", category: "Francia", src: "https://images.unsplash.com/photo-1607779097040-26e80aa78e66?q=80&w=800" },
+  { id: 5, title: "Neon Nyár", category: "Gél lakk", src: "https://images.unsplash.com/photo-1522337660859-02fbefca4702?q=80&w=800" },
+  { id: 6, title: "Márvány minta", category: "Zselé építés", src: "https://images.unsplash.com/photo-1632345031435-8727f6897d53?q=80&w=800" },
+];
+---
+
+<section id="munkak" class="py-24 px-4 bg-white relative">
+  <div class="max-w-6xl mx-auto">
+    <div class="text-center mb-16">
+      <h2 class="text-5xl font-serif font-bold text-slate-900 mb-6 tracking-tight">Referenciák</h2>
+      
+      <div class="flex flex-wrap justify-center gap-3 mt-8">
+        {categories.map((cat) => (
+          <button 
+            data-filter={cat}
+            class:list={[
+              "filter-btn px-6 py-2 rounded-full border text-sm font-semibold transition-all duration-300 active:scale-95",
+              cat === "Összes" 
+                ? "bg-pink-600 text-white shadow-lg border-pink-600" 
+                : "bg-white text-slate-700 border-pink-100 hover:bg-pink-50 hover:text-pink-600"
+            ]}
+          >
+            {cat}
+          </button>
+        ))}
+      </div>
+    </div>
+
+    <div id="gallery-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+      {works.map((work) => (
+        <div 
+          class="gallery-item group relative overflow-hidden rounded-[2.5rem] bg-slate-100 cursor-pointer aspect-4/5"
+          data-category={work.category}
+          data-src={work.src}
+          data-title={work.title}
+        >
+          <img 
+            src={work.src} 
+            alt={work.title} 
+            class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+            loading="lazy"
+          />
+          <div class="absolute inset-0 bg-linear-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 flex flex-col justify-end p-8">
+            <span class="text-pink-400 text-xs font-bold uppercase tracking-widest mb-1">{work.category}</span>
+            <h3 class="text-white text-xl font-serif">{work.title}</h3>
+          </div>
+        </div>
+      ))}
+    </div>
+  </div>
+
+  <div id="lightbox" class="fixed inset-0 z-100 flex items-center justify-center bg-slate-950/95 backdrop-blur-xl opacity-0 pointer-events-none transition-opacity duration-500">
+    <button id="close-lightbox" class="absolute top-8 right-8 text-white/50 hover:text-white transition-colors z-110">
+      <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M6 18L18 6M6 6l12 12"/></svg>
+    </button>
+
+    <button id="prev-btn" class="absolute left-4 md:left-8 text-white/30 hover:text-white transition-all p-4 z-110">
+      <svg class="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M15 19l-7-7 7-7"/></svg>
+    </button>
+    <button id="next-btn" class="absolute right-4 md:right-8 text-white/30 hover:text-white transition-all p-4 z-110">
+      <svg class="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M9 5l7 7-7 7"/></svg>
+    </button>
+
+    <div class="max-w-[90vw] max-h-[85vh] relative flex flex-col items-center">
+      <img id="lightbox-img" src="" alt="" class="max-w-full max-h-[70vh] rounded-3xl shadow-2xl object-contain ring-1 ring-white/10" />
+      <div class="mt-8 text-center px-4">
+        <h3 id="lightbox-title" class="text-white text-2xl md:text-3xl font-serif font-light tracking-wide"></h3>
+        <p id="lightbox-cat" class="text-pink-400 text-xs font-bold uppercase tracking-[0.3em] mt-3"></p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<script>
+  // Típus-kényszerítés (casting) a TypeScript hibák elkerülésére
+  const filterButtons = document.querySelectorAll('.filter-btn') as NodeListOf<HTMLButtonElement>;
+  const galleryItems = document.querySelectorAll('.gallery-item') as NodeListOf<HTMLElement>;
+  const lightbox = document.getElementById('lightbox') as HTMLElement;
+  const lightboxImg = document.getElementById('lightbox-img') as HTMLImageElement;
+  const lightboxTitle = document.getElementById('lightbox-title') as HTMLElement;
+  const lightboxCat = document.getElementById('lightbox-cat') as HTMLElement;
+  const closeBtn = document.getElementById('close-lightbox') as HTMLButtonElement;
+  const prevBtn = document.getElementById('prev-btn') as HTMLButtonElement;
+  const nextBtn = document.getElementById('next-btn') as HTMLButtonElement;
+
+  let currentVisibleItems: HTMLElement[] = [...galleryItems];
+  let currentIndex = 0;
+
+  // --- SZŰRÉS LOGIKA ---
+  filterButtons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const filter = btn.getAttribute('data-filter');
+      
+      // Gombok vizuális váltása
+      filterButtons.forEach(b => {
+        b.classList.remove('bg-pink-600', 'text-white', 'shadow-lg', 'border-pink-600');
+        b.classList.add('bg-white', 'text-slate-700', 'border-pink-100');
+      });
+      btn.classList.add('bg-pink-600', 'text-white', 'shadow-lg', 'border-pink-600');
+      btn.classList.remove('bg-white', 'text-slate-700', 'border-pink-100');
+
+      // Elemek szűrése
+      currentVisibleItems = [];
+      galleryItems.forEach(item => {
+        const itemCat = item.getAttribute('data-category');
+        if (filter === "Összes" || itemCat === filter) {
+          item.style.display = "block";
+          setTimeout(() => { item.style.opacity = "1"; }, 10);
+          currentVisibleItems.push(item);
+        } else {
+          item.style.opacity = "0";
+          setTimeout(() => { item.style.display = "none"; }, 300);
+        }
+      });
+    });
+  });
+
+  // --- LIGHTBOX LOGIKA ---
+  const updateLightbox = (index: number) => {
+    const item = currentVisibleItems[index];
+    if (!item) return;
+
+    const src = item.getAttribute('data-src') || '';
+    const title = item.getAttribute('data-title') || '';
+    const cat = item.getAttribute('data-category') || '';
+
+    lightboxImg.src = src;
+    lightboxTitle.textContent = title;
+    lightboxCat.textContent = cat;
+    currentIndex = index;
+  };
+
+  galleryItems.forEach(item => {
+    item.addEventListener('click', () => {
+      const index = currentVisibleItems.indexOf(item);
+      if (index !== -1) {
+        updateLightbox(index);
+        lightbox.classList.remove('opacity-0', 'pointer-events-none');
+      }
+    });
+  });
+
+  const closeLightbox = () => {
+    lightbox.classList.add('opacity-0', 'pointer-events-none');
+    setTimeout(() => { lightboxImg.src = ""; }, 300); // Kép ürítése a következő nyitásig
+  };
+  
+  closeBtn?.addEventListener('click', closeLightbox);
+  lightbox?.addEventListener('click', (e) => { if(e.target === lightbox) closeLightbox(); });
+
+  nextBtn?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    currentIndex = (currentIndex + 1) % currentVisibleItems.length;
+    updateLightbox(currentIndex);
+  });
+
+  prevBtn?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    currentIndex = (currentIndex - 1 + currentVisibleItems.length) % currentVisibleItems.length;
+    updateLightbox(currentIndex);
+  });
+
+  window.addEventListener('keydown', (e) => {
+    if (lightbox.classList.contains('opacity-0')) return;
+    if (e.key === "Escape") closeLightbox();
+    if (e.key === "ArrowRight") nextBtn.click();
+    if (e.key === "ArrowLeft") prevBtn.click();
+  });
+</script>
+
+<style>
+  .gallery-item {
+    transition: opacity 0.3s ease, transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+</style>

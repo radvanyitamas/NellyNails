@@ -1,11 +1,13 @@
-// @ts-check
 import { defineConfig } from 'astro/config';
-
 import tailwindcss from '@tailwindcss/vite';
+import netlify from '@astrojs/netlify';
 
-// https://astro.build/config
 export default defineConfig({
+  output: 'server', // Ez kell a dinamikus naptárhoz és az API-hoz
+  adapter: netlify(),
   vite: {
-    plugins: [tailwindcss()]
-  }
+    plugins: [tailwindcss()],
+  },
 });
+
+// HpwcdRs@N6y2+s6
