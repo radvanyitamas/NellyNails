@@ -7,18 +7,18 @@
   },
   "scripts": {
     "dev": "astro dev",
-  "start": "astro dev",
-  "build": "astro build",
-  "preview": "astro preview",
-  "astro": "astro"
+    "start": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "astro": "astro"
   },
   "dependencies": {
-  "astro": "^5.0.0",
-  "@astrojs/tailwind": "^6.0.0",
-  "@astrojs/vercel": "^8.0.0",
-  "supabase": "...",
-  "resend": "..."
-},
+    "@astrojs/tailwind": "^6.0.0",
+    "@astrojs/vercel": "^8.2.11",
+    "astro": "^5.0.0",
+    "resend": "...",
+    "supabase": "..."
+  },
   "devDependencies": {
     "prettier-plugin-tailwindcss": "^0.8.0"
   }

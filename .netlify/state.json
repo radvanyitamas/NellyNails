@@ -1,0 +1,21 @@
+{
+	"geolocation": {
+		"data": {
+			"city": "Mezőberény",
+			"country": {
+				"code": "HU",
+				"name": "Hungary"
+			},
+			"subdivision": {
+				"code": "BE",
+				"name": "Bekes County"
+			},
+			"timezone": "Europe/Budapest",
+			"latitude": 46.817,
+			"longitude": 21.0342,
+			"postalCode": "5650"
+		},
+		"timestamp": 1778154200420
+	},
+	"dbConnectionString": "postgres://localhost:60590/postgres"
+}
