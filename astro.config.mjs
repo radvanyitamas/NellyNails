@@ -1,10 +1,10 @@
 import { defineConfig } from 'astro/config';
 import tailwindcss from '@tailwindcss/vite';
-import netlify from '@astrojs/netlify';
+import vercel from "@astrojs/vercel/serverless";
 
 export default defineConfig({
   output: 'server', // Ez kell a dinamikus naptárhoz és az API-hoz
-  adapter: netlify(),
+  adapter: vercel(),
   vite: {
     plugins: [tailwindcss()],
   },
