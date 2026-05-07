@@ -1,0 +1,52 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Navigation from '../components/Navigation.astro';
+---
+
+<Layout title="Bejelentkezés | Nails by Nelly">
+  <Navigation />
+  <main class="min-h-screen flex items-center justify-center bg-slate-50 px-4">
+    <div class="max-w-md w-full bg-white p-10 rounded-[3rem] shadow-2xl border border-pink-100">
+      <h1 class="text-3xl font-serif font-bold text-center mb-8 text-slate-900">Admin Belépés</h1>
+      
+      <form id="login-form" class="space-y-6">
+        <div>
+          <label class="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2 ml-2">E-mail cím</label>
+          <input type="email" name="email" required class="w-full p-4 rounded-2xl bg-slate-50 border-none ring-1 ring-slate-200 focus:ring-2 focus:ring-pink-500 outline-none" />
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2 ml-2">Jelszó</label>
+          <input type="password" name="password" required class="w-full p-4 rounded-2xl bg-slate-50 border-none ring-1 ring-slate-200 focus:ring-2 focus:ring-pink-500 outline-none" />
+        </div>
+        <button type="submit" class="w-full py-5 bg-slate-900 text-white font-bold rounded-2xl hover:bg-slate-800 transition-all active:scale-95 shadow-xl">
+          Belépés
+        </button>
+      </form>
+      <p id="error-msg" class="mt-4 text-center text-red-500 text-sm font-bold hidden"></p>
+    </div>
+  </main>
+</Layout>
+
+<script>
+  import { supabase } from '../lib/supabase';
+
+  const form = document.getElementById('login-form') as HTMLFormElement;
+  const errorMsg = document.getElementById('error-msg');
+
+  form.onsubmit = async (e) => {
+    e.preventDefault();
+    const formData = new FormData(form);
+    const email = formData.get('email') as string;
+    const password = formData.get('password') as string;
+
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+
+    if (error) {
+      errorMsg!.textContent = "Hibás adatok!";
+      errorMsg!.classList.remove('hidden');
+    } else {
+      // Sikeres belépés után az adminra dobunk, már pw paraméter nélkül
+      window.location.href = '/admin';
+    }
+  };
+</script>

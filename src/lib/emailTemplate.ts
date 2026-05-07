@@ -1,22 +1,17 @@
 // src/lib/emailTemplate.ts
 
-export function getConfirmationEmailHtml(name: string, date: string, confirmLink: string) {
-  // A dátum formázása szebbre (pl: 2026. május 7. 15:00)
-  const formattedDate = new Date(date).toLocaleString('hu-HU', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit'
-  });
+export function getEmailHtml(name: string, date: string, confirmLink: string, manageLink: string) {
+  // Mivel a book.ts már formázott dátumot küld, itt csak közvetlenül megjelenítjük
+  const displayDate = date;
 
   return `
     <!DOCTYPE html>
     <html lang="hu">
     <head>
       <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
       <style>
-        .body { background-color: #fdf2f8; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; margin: 0; padding: 40px 20px; }
+        body { background-color: #fdf2f8; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; margin: 0; padding: 40px 20px; }
         .container { max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 40px; padding: 40px; text-align: center; border: 1px solid #fce7f3; box-shadow: 0 10px 30px rgba(219, 39, 119, 0.05); }
         .logo { font-family: 'Georgia', serif; font-size: 32px; font-weight: bold; color: #1e293b; margin-bottom: 30px; letter-spacing: -1px; }
         .logo span { color: #db2777; }
@@ -27,11 +22,13 @@ export function getConfirmationEmailHtml(name: string, date: string, confirmLink
         .slot-time { color: #1e293b; font-size: 22px; font-weight: bold; margin: 0; }
         .button { display: inline-block; background-color: #db2777; color: #ffffff !important; padding: 18px 40px; text-decoration: none; border-radius: 22px; font-weight: bold; font-size: 16px; margin: 20px 0; box-shadow: 0 10px 20px rgba(219, 39, 119, 0.2); }
         .notice { color: #94a3b8; font-size: 12px; margin-top: 40px; line-height: 1.5; max-width: 400px; margin-left: auto; margin-right: auto; }
+        .manage-box { margin-top: 30px; padding-top: 20px; border-top: 1px dashed #f1f5f9; }
+        .manage-link { color: #db2777; text-decoration: underline; font-size: 13px; font-weight: bold; }
         .footer { margin-top: 50px; padding-top: 30px; border-top: 1px solid #f1f5f9; color: #64748b; font-size: 13px; }
         .footer b { color: #475569; }
       </style>
     </head>
-    <body class="body">
+    <body>
       <div class="container">
         <div class="logo">Nails<span>by</span>Nelly</div>
         
@@ -43,7 +40,7 @@ export function getConfirmationEmailHtml(name: string, date: string, confirmLink
 
         <div class="slot-box">
           <span class="slot-label">Kért időpont:</span>
-          <p class="slot-time">${formattedDate}</p>
+          <p class="slot-time">${displayDate}</p>
         </div>
 
         <a href="${confirmLink}" class="button">IDŐPONT MEGERŐSÍTÉSE</a>
@@ -51,6 +48,11 @@ export function getConfirmationEmailHtml(name: string, date: string, confirmLink
         <p class="notice">
           Ha nem te kezdeményezted ezt a foglalást, kérlek hagyd figyelmen kívül ezt a levelet. Az időpont megerősítés nélkül 1 órán belül törlődik.
         </p>
+
+        <div class="manage-box">
+          <p style="color: #64748b; font-size: 12px; margin-bottom: 8px;">Közbejött valami? Itt tudod lemondani a foglalásodat:</p>
+          <a href="${manageLink}" class="manage-link">Foglalás kezelése és lemondás</a>
+        </div>
 
         <div class="footer">
           <p><b>Helyszín:</b> 6721 Szeged, Hullám utca 3.<br>

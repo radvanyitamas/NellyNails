@@ -1,0 +1,88 @@
+---
+import Layout from '../layouts/Layout.astro';
+import { supabase } from '../lib/supabase';
+
+const ADMIN_PASSWORD = "NellyAdmin2026"; 
+const authCookie = Astro.cookies.get('admin_auth')?.value;
+const isAuthenticated = authCookie === ADMIN_PASSWORD;
+
+if (Astro.request.method === "POST") {
+  const data = await Astro.request.formData();
+  if (data.get("password") === ADMIN_PASSWORD) {
+    Astro.cookies.set('admin_auth', ADMIN_PASSWORD, { path: '/' });
+    return Astro.redirect('/admin');
+  }
+}
+
+let bookings = [];
+if (isAuthenticated) {
+    const { data } = await supabase.from('bookings').select('*').order('booking_date', { ascending: true });
+    bookings = data || [];
+}
+---
+
+<Layout title="Admin Kezelőpult">
+    <div class="min-h-screen bg-[#fdf2f8] font-sans pb-20">
+        {!isAuthenticated ? (
+            <div class="flex items-center justify-center pt-32 px-6">
+                <div class="max-w-md w-full bg-white rounded-[3rem] p-12 shadow-2xl border border-pink-100 text-center">
+                    <h1 class="text-3xl font-serif font-bold text-slate-900 mb-8">Admin Belépés</h1>
+                    <form method="POST" class="space-y-6">
+                        <input type="password" name="password" placeholder="Jelszó" class="w-full p-5 rounded-2xl bg-slate-50 border-none ring-1 ring-slate-200 outline-none text-center font-bold" />
+                        <button class="w-full py-5 bg-[#db2777] text-white font-bold rounded-2xl shadow-lg">Belépés</button>
+                    </form>
+                </div>
+            </div>
+        ) : (
+            <div class="max-w-6xl mx-auto px-6 pt-10">
+                <div class="flex justify-between items-center mb-16">
+                    <div class="flex items-center gap-4">
+                        <h1 class="text-5xl font-serif font-bold text-slate-900">Foglalások</h1>
+                        <div class="bg-white px-6 py-2 rounded-full shadow-sm border border-pink-100 font-bold text-slate-700">
+                             Összesen: {bookings.length}
+                        </div>
+                    </div>
+                    <button onclick="document.cookie='admin_auth=;path=/;expires=Thu...';location.reload();" class="px-6 py-2 bg-white text-pink-600 font-bold rounded-full shadow-sm border border-pink-100 hover:bg-pink-50 transition-all text-xs uppercase tracking-widest">Kijelentkezés</button>
+                </div>
+
+                <div class="bg-white rounded-[3rem] shadow-2xl shadow-pink-200/20 border border-pink-50 overflow-hidden p-4">
+                    <table class="w-full text-left">
+                        <thead class="text-[10px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-50">
+                            <tr>
+                                <th class="px-10 py-6">Időpont & Státusz</th>
+                                <th class="px-10 py-6">Vendég</th>
+                                <th class="px-10 py-6 text-right">Művelet</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-50">
+                            {bookings.map((b) => (
+                                <tr class="hover:bg-pink-50/10 transition-all">
+                                    <td class="px-10 py-8">
+                                        <div class="font-bold text-slate-900 text-lg">
+                                            {new Date(b.booking_date).toLocaleString('hu-HU', { month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                                        </div>
+                                        <div class={`mt-2 inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+                                            b.status === 'confirmed' ? 'bg-green-50 text-green-600' : 'bg-amber-50 text-amber-600'
+                                        }`}>
+                                            <span class={`w-1.5 h-1.5 rounded-full ${b.status === 'confirmed' ? 'bg-green-500' : 'bg-amber-500'}`}></span>
+                                            {b.status === 'confirmed' ? 'Megerősítve' : 'Függőben'}
+                                        </div>
+                                    </td>
+                                    <td class="px-10 py-8">
+                                        <div class="font-bold text-slate-800 text-lg">{b.name}</div>
+                                        <div class="text-sm text-slate-400 font-medium mt-1">+{b.phone} | {b.email}</div>
+                                    </td>
+                                    <td class="px-10 py-8 text-right">
+                                        <button class="delete-btn p-4 bg-slate-50 text-slate-300 hover:bg-red-50 hover:text-red-500 rounded-full transition-all" data-id={b.id}>
+                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                                        </button>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        )}
+    </div>
+</Layout>
