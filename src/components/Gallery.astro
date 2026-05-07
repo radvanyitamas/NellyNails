@@ -1,17 +1,15 @@
 ---
 // src/components/Gallery.astro
+import { supabase } from '../lib/supabase';
+
 const categories = ["Összes", "Zselé építés", "Gél lakk", "Díszített", "Francia"];
 
-const works = [
-  { id: 1, title: "Rose Gold Csillogás", category: "Zselé építés", src: "https://images.unsplash.com/photo-1632345031435-8727f6897d53?q=80&w=800" },
-  { id: 2, title: "Matte Black Minimal", category: "Gél lakk", src: "https://images.unsplash.com/photo-1604654894610-df63bc536371?q=80&w=800" },
-  { id: 3, title: "Tavaszi Virágok", category: "Díszített", src: "https://images.unsplash.com/photo-1519014816548-bf5fe059798b?q=80&w=800" },
-  { id: 4, title: "Klasszikus Francia", category: "Francia", src: "https://images.unsplash.com/photo-1607779097040-26e80aa78e66?q=80&w=800" },
-  { id: 5, title: "Neon Nyár", category: "Gél lakk", src: "https://images.unsplash.com/photo-1522337660859-02fbefca4702?q=80&w=800" },
-  { id: 6, title: "Márvány minta", category: "Zselé építés", src: "https://images.unsplash.com/photo-1632345031435-8727f6897d53?q=80&w=800" },
-];
+// Adatok lekérése a Supabase-ből
+const { data: works = [] } = await supabase
+  .from('gallery')
+  .select('*')
+  .order('created_at', { ascending: false });
 ---
-
 <section id="munkak" class="py-24 px-4 bg-white relative">
   <div class="max-w-6xl mx-auto">
     <div class="text-center mb-16">

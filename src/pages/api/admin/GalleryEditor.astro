@@ -1,0 +1,87 @@
+<div class="space-y-8 p-6">
+  <div class="bg-pink-50 p-6 rounded-3xl border border-pink-100">
+    <h3 class="text-xl font-serif font-bold mb-4">Új kép feltöltése</h3>
+    <form id="upload-form" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <input type="text" id="title" placeholder="Kép címe (pl. Rose Gold Csillogás)" class="p-3 rounded-xl border border-pink-200" required />
+      <select id="category" class="p-3 rounded-xl border border-pink-200">
+        <option value="Zselé építés">Zselé építés</option>
+        <option value="Gél lakk">Gél lakk</option>
+        <option value="Díszített">Díszített</option>
+        <option value="Francia">Francia</option>
+      </select>
+      <input type="file" id="file" accept="image/*" class="md:col-span-2 p-2" required />
+      <button type="submit" id="submit-btn" class="md:col-span-2 bg-pink-600 text-white py-3 rounded-xl font-bold hover:bg-pink-700 transition-all">
+        Kép mentése a galériába
+      </button>
+    </form>
+  </div>
+
+  <div class="grid grid-cols-2 md:grid-cols-4 gap-4" id="admin-gallery-list">
+    </div>
+</div>
+
+<script>
+  import { supabase } from '../../lib/supabase';
+
+  const form = document.getElementById('upload-form') as HTMLFormElement;
+  const list = document.getElementById('admin-gallery-list');
+
+  // Galéria betöltése az adminnak
+  async function loadGallery() {
+    const { data } = await supabase.from('gallery').select('*').order('created_at', { ascending: false });
+    if (list && data) {
+      list.innerHTML = data.map(item => `
+        <div class="relative group rounded-xl overflow-hidden aspect-square border">
+          <img src="${item.src}" class="w-full h-full object-cover" />
+          <button onclick="deleteItem('${item.id}', '${item.storage_path}')" class="absolute inset-0 bg-red-600/80 text-white opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity font-bold">
+            TÖRLÉS
+          </button>
+        </div>
+      `).join('');
+    }
+  }
+
+  form?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = document.getElementById('submit-btn') as HTMLButtonElement;
+    btn.disabled = true; btn.innerText = "Feltöltés...";
+
+    const fileEl = document.getElementById('file') as HTMLInputElement;
+    const file = fileEl.files?.[0];
+    const title = (document.getElementById('title') as HTMLInputElement).value;
+    const category = (document.getElementById('category') as HTMLSelectElement).value;
+
+    if (!file) return;
+
+    // 1. Feltöltés Storage-ba
+    const fileName = `${Date.now()}-${file.name}`;
+    const { data: storageData, error: storageError } = await supabase.storage
+      .from('gallery')
+      .upload(fileName, file);
+
+    if (storageError) { alert("Storage hiba!"); btn.disabled = false; return; }
+
+    // 2. URL lekérése
+    const { data: { publicUrl } } = supabase.storage.from('gallery').getPublicUrl(fileName);
+
+    // 3. Mentés Database-be
+    await supabase.from('gallery').insert([{
+      title, category, src: publicUrl, storage_path: fileName
+    }]);
+
+    form.reset();
+    btn.disabled = false; btn.innerText = "Kép mentése a galériába";
+    loadGallery();
+  });
+
+  // Törlés funkció a window-hoz rendelve, hogy a HTML stringből is elérhető legyen
+  (window as any).deleteItem = async (id: string, path: string) => {
+    if (!confirm("Biztosan törlöd ezt a képet?")) return;
+    
+    await supabase.storage.from('gallery').remove([path]);
+    await supabase.from('gallery').delete().eq('id', id);
+    loadGallery();
+  };
+
+  loadGallery();
+</script>
