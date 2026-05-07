@@ -6,7 +6,11 @@ export default defineConfig({
   integrations: [tailwind()],
   output: 'server',
   adapter: vercel({
-    // Ez kényszeríti az Astro-t, hogy a Vercel szabvány szerint építse fel a szervert
-    deploymentStrategy: 'serverless' 
-  })
+    // Ez a sor kényszeríti a modernebb struktúrát
+    webAnalytics: { enabled: true }
+  }),
+  // Kényszerítsük a build kimenetet a gyökérbe
+  build: {
+    server: './dist/server/entry.mjs'
+  }
 });
