@@ -1,11 +1,11 @@
 import { defineConfig } from 'astro/config';
-import tailwind from "@astrojs/tailwind";
 import vercel from "@astrojs/vercel";
+import tailwindVite from "@tailwindcss/vite";
 
 export default defineConfig({
-  integrations: [tailwind({
-    applyBaseStyles: false, // Ez megakadályozza a PostCSS duplázást
-  })],
   output: 'server',
-  adapter: vercel()
+  adapter: vercel(),
+  vite: {
+    plugins: [tailwindVite()]
+  }
 });
