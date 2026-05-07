@@ -1,13 +1,11 @@
 import { defineConfig } from 'astro/config';
-import tailwindcss from '@tailwindcss/vite';
-import vercel from "@astrojs/vercel";
+import tailwind from "@astrojs/tailwind";
+import vercel from "@astrojs/vercel"; // Ellenőrizd, hogy nincs itt /serverless vagy más!
 
 export default defineConfig({
-  output: 'server', // Ez kell a dinamikus naptárhoz és az API-hoz
-  adapter: vercel(),
-  vite: {
-    plugins: [tailwindcss()],
-  },
+  integrations: [tailwind()],
+  output: 'server', // Maradjon szerver mód az API-k miatt
+  adapter: vercel({
+    webAnalytics: { enabled: true } // Ez segít a Vercel-nek felismerni a konfigurációt
+  })
 });
-
-// HpwcdRs@N6y2+s6

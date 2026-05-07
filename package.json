@@ -7,9 +7,10 @@
   },
   "scripts": {
     "dev": "astro dev",
-    "build": "astro build",
-    "preview": "astro preview",
-    "astro": "astro"
+  "start": "astro dev",
+  "build": "astro build",
+  "preview": "astro preview",
+  "astro": "astro"
   },
   "dependencies": {
     "@astrojs/tailwind": "^6.0.2",
