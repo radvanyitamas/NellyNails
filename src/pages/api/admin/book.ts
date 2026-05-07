@@ -1,7 +1,7 @@
 import type { APIRoute } from 'astro';
-import { supabase } from '../../lib/supabase';
 import { Resend } from 'resend';
-import { getEmailHtml } from '../../lib/emailTemplate';
+import { getEmailHtml } from '../../../lib/emailTemplate';
+import { supabase } from '../../../lib/supabase';
 
 const resend = new Resend(import.meta.env.RESEND_API_KEY);
 
