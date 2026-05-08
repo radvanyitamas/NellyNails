@@ -1,6 +1,9 @@
 ---
+// src/layouts/Layout.astro
 import '../styles/global.css';
 import Footer from '../components/Footer.astro';
+import { Analytics } from '@vercel/analytics/react';
+import { SpeedInsights } from '@vercel/speed-insights/astro';
 
 const { title } = Astro.props;
 ---
@@ -12,7 +15,7 @@ const { title } = Astro.props;
 		<meta name="viewport" content="width=device-width" />
         
         <link rel="icon" href="/favicon.ico" sizes="any" />
-        <link rel="icon" href="/icon.svg" type="image/svg+xml" />
+        <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
 
 		<meta name="generator" content={Astro.generator} />
@@ -29,6 +32,9 @@ const { title } = Astro.props;
 		</main>
 
 		<Footer />
+
+		<Analytics client:load />
+		<SpeedInsights />
 	</body>
 </html>
 
