@@ -81,24 +81,54 @@ export const POST: APIRoute = async ({ request }) => {
 
     if (resend) {
       try {
-        // --- DINAMIKUS LINK GENERÁLÁS (DEV ÉS PROD) ---
         const host = request.headers.get('host') || 'nailsbynelly.hu';
         const protocol = host.includes('localhost') ? 'http' : 'https';
         const domain = `${protocol}://${host}`;
         
         const confirmLink = `${domain}/megerosites?id=${booking.id}`;
         const cancelLink = `${domain}/lemondas?id=${booking.id}`; 
+        const adminLink = `${domain}/admin`; // Az admin oldal elérhetősége
         
         const formattedDate = requestedDate.toLocaleString('hu-HU', { 
             year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' 
         });
 
+        // 1. EMAIL A VENDÉGNEK (Visszaigazolás kérése)
         await resend.emails.send({
           from: 'Nails by Nelly <info@nailsbynelly.hu>',
           to: [email],
           subject: '🎀 Időpont megerősítése: Nails by Nelly',
           html: await getEmailHtml(name, formattedDate, confirmLink, cancelLink)
         });
+
+        // 2. EMAIL NELLYNEK (Értesítés új foglalásról)
+        await resend.emails.send({
+          from: 'Nails by Nelly System <info@nailsbynelly.hu>',
+          to: ['nellirad@gmail.com'],
+          subject: '✨ ÚJ IDŐPONT FOGLALÁS ÉRKEZETT!',
+          html: `
+            <div style="font-family: sans-serif; line-height: 1.6; color: #333; max-width: 600px; border: 1px solid #eee; padding: 20px; border-radius: 10px;">
+              <h2 style="color: #db2777; border-bottom: 2px solid #fbcfe8; padding-bottom: 10px;">Új foglalási értesítés</h2>
+              <p>Szia Nelly! Új időpontot foglaltak a weboldalon. Itt vannak a részletek:</p>
+              
+              <div style="background-color: #f9fafb; padding: 15px; border-radius: 8px; margin: 20px 0;">
+                <p><strong>Vendég neve:</strong> ${name}</p>
+                <p><strong>Időpont:</strong> ${formattedDate}</p>
+                <p><strong>Telefonszám:</strong> ${phone || 'Nincs megadva'}</p>
+                <p><strong>E-mail cím:</strong> ${email}</p>
+              </div>
+
+              <p style="margin-top: 30px;">A foglalás kezeléséhez kattints az alábbi gombra:</p>
+              <a href="${adminLink}" style="display: inline-block; background-color: #db2777; color: white; padding: 12px 25px; text-decoration: none; border-radius: 50px; font-weight: bold;">Admin felület megnyitása</a>
+              
+              <p style="font-size: 12px; color: #9ca3af; margin-top: 40px; border-top: 1px solid #eee; pt: 10px;">
+                Ez egy automatikus üzenet a nailsbynelly.hu rendszeréből.
+              </p>
+            </div>
+          `
+        });
+
+        console.log(`Email-ek elküldve: Vendég (${email}) és Admin (nellirad@gmail.com)`);
       } catch (emailErr) {
         console.error("E-mail hiba:", emailErr);
       }
