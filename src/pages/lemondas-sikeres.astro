@@ -1,11 +1,34 @@
 ---
 import Layout from '../layouts/Layout.astro';
 ---
-<Layout title="Lemondva">
-  <div class="min-h-screen flex items-center justify-center bg-[#fdf2f8] text-center">
-    <div class="bg-white p-12 rounded-[3rem] shadow-2xl border border-pink-100">
-      <h1 class="text-2xl font-bold mb-4">Időpont sikeresen lemondva. ✨</h1>
-      <a href="/" class="px-8 py-3 bg-slate-800 text-white rounded-xl">Vissza</a>
+
+<Layout title="Időpont lemondva">
+  <div class="min-h-screen flex items-center justify-center bg-[#fdf2f8] px-6">
+    <div class="max-w-md w-full bg-white p-12 rounded-[3rem] shadow-2xl border border-pink-100 text-center">
+      <div class="text-5xl mb-6">✨</div>
+      
+      <h1 class="text-3xl font-serif font-bold text-slate-900 mb-4">Időpont lemondva</h1>
+      <p class="text-slate-600 mb-10 font-medium">
+        Az időpontodat sikeresen töröltük a rendszerből. Sajnáljuk, hogy most nem tudsz jönni, de várunk vissza máskor!
+      </p>
+
+      <a 
+        href="/" 
+        class="inline-block w-full py-5 bg-pink-600 text-white font-bold rounded-2xl shadow-lg shadow-pink-200 hover:bg-pink-700 transition-all active:scale-95"
+      >
+        VISSZA A KEZDŐOLDALRA
+      </a>
     </div>
   </div>
 </Layout>
+
+<style>
+  /* Finom megjelenési animáció */
+  div {
+    animation: fadeIn 0.5s ease-out;
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+</style>

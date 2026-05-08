@@ -106,7 +106,7 @@ export const POST: APIRoute = async ({ request }) => {
 
         // E-mail küldése a Resend segítségével
         await resend.emails.send({
-          from: 'Nails by Nelly <onboarding@resend.dev>',
+          from: 'Nails by Nelly <info@nailsbynelly.hu>',
           to: [email],
           subject: '🎀 Időpont megerősítése: Nails by Nelly',
           html: await getEmailHtml(name, formattedDate, confirmLink, cancelLink)
