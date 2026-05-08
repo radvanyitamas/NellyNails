@@ -92,7 +92,7 @@ const hours = settings?.find(s => s.key === 'hours')?.value || {
 
           <div class="space-y-4">
             <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">1. Nap kiválasztása</label>
-            <div id="calendar-container" class="rounded-3xl overflow-hidden shadow-inner ring-1 ring-slate-200 bg-white p-2 min-h-[300px]">
+            <div id="calendar-container" class="rounded-3xl overflow-hidden shadow-inner ring-1 ring-slate-200 bg-white p-2 min-h-75">
                 <input type="text" id="inline-calendar" required class="hidden" />
             </div>
           </div>
@@ -111,7 +111,7 @@ const hours = settings?.find(s => s.key === 'hours')?.value || {
       </div>
     </div>
 
-    <div class="mt-16 rounded-[3rem] overflow-hidden shadow-2xl h-[450px] border-8 border-white ring-1 ring-slate-100">
+    <div class="mt-16 rounded-[3rem] overflow-hidden shadow-2xl h-112.5 border-8 border-white ring-1 ring-slate-100">
       <iframe 
         src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2758.123!2d20.147!3d46.253!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zNDbCsDE1JzExLjAiTiAyMMKwMDgnNDkuMiJF!5e0!3m2!1shu!2shu!4v123456789" 
         class="w-full h-full border-0" 
