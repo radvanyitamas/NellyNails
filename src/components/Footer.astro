@@ -1,0 +1,48 @@
+---
+const currentYear = new Date().getFullYear();
+---
+
+<footer class="bg-stone-100 border-t border-stone-200 pt-12 pb-8 mt-20">
+  <div class="max-w-6xl mx-auto px-4">
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8 text-center md:text-left">
+      
+      <div>
+        <h3 class="font-serif text-xl text-stone-800 mb-4">Nails by Nelly</h3>
+        <p class="text-stone-600 text-sm leading-relaxed">
+          Professzionális műkörömépítés és manikűr Mezőberény szívében. 
+          Minőség és elegancia minden mozdulatban.
+        </p>
+      </div>
+
+      <div>
+        <h4 class="font-semibold text-stone-800 mb-4">Jogi információk</h4>
+        <ul class="space-y-2 text-sm text-stone-600">
+          <li>
+            <a href="/adatvedelem" class="hover:text-pink-600 transition-colors">Adatkezelési tájékoztató</a>
+          </li>
+          <li>
+            <a href="/impresszum" class="hover:text-pink-600 transition-colors">Impresszum</a>
+          </li>
+        </ul>
+      </div>
+
+      <div class="md:text-right">
+        <h4 class="font-semibold text-stone-800 mb-4">Weboldal</h4>
+        <p class="text-sm text-stone-600 mb-2">
+          Készítette: <span class="font-medium text-stone-800">Radványi Tamás</span>
+        </p>
+        <p class="text-sm">
+          <a href="https://radvanyitamas.com" target="_blank" rel="noopener noreferrer" class="text-pink-600 hover:underline">
+            radvanyitamas.com
+          </a>
+        </p>
+      </div>
+    </div>
+
+    <div class="border-t border-stone-200 pt-8 text-center">
+      <p class="text-xs text-stone-500">
+        &copy; {currentYear} Nails by Nelly - Minden jog fenntartva.
+      </p>
+    </div>
+  </div>
+</footer>
