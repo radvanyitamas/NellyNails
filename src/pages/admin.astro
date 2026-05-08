@@ -19,20 +19,29 @@ let bookings = [];
 let priceCategories = [];
 let galleryItems = [];
 let uniqueCategories = [];
+let openingHours = [];
+let siteSettings = [];
 
 if (isAuthenticated) {
     // Adatok lekérése a szerveren
     const { data: bData } = await supabase.from('bookings').select('*').order('booking_date', { ascending: true });
     const { data: cData } = await supabase.from('price_categories').select('*, prices(*)').order('display_order', { ascending: true });
     const { data: gData } = await supabase.from('gallery').select('*').order('created_at', { ascending: false });
+    const { data: hData } = await supabase.from('opening_hours').select('*').order('day_id', { ascending: true });
+    const { data: sData } = await supabase.from('site_settings').select('*');
     
     bookings = bData || [];
     priceCategories = cData || [];
     galleryItems = gData || [];
+    openingHours = hData || [];
+    siteSettings = sData || [];
 
     // Kategóriák kigyűjtése a galéria javaslatokhoz
     uniqueCategories = [...new Set(galleryItems.map(item => item.category))];
 }
+
+// Segédfüggvény a beállítások kinyeréséhez
+const getSetting = (key) => siteSettings.find(s => s.key === key)?.value || "";
 ---
 
 <Layout title="Vezérlőpult">
@@ -61,8 +70,9 @@ if (isAuthenticated) {
 
                 <div class="flex flex-wrap gap-4 mb-8">
                     <button class="tab-btn px-8 py-3 rounded-full font-bold transition-all bg-[#db2777] text-white shadow-lg" data-target="sec-b">Foglalások</button>
-                    <button class="tab-btn px-8 py-3 rounded-full font-bold transition-all bg-white text-slate-500 border border-pink-100" data-target="sec-p">Árazás & Kategóriák</button>
-                    <button class="tab-btn px-8 py-3 rounded-full font-bold transition-all bg-white text-slate-500 border border-pink-100" data-target="sec-g">Galéria Kezelő</button>
+                    <button class="tab-btn px-8 py-3 rounded-full font-bold transition-all bg-white text-slate-500 border border-pink-100" data-target="sec-p">Árazás</button>
+                    <button class="tab-btn px-8 py-3 rounded-full font-bold transition-all bg-white text-slate-500 border border-pink-100" data-target="sec-g">Galéria</button>
+                    <button class="tab-btn px-8 py-3 rounded-full font-bold transition-all bg-white text-slate-500 border border-pink-100" data-target="sec-s">Beállítások</button>
                 </div>
 
                 <div id="sec-b" class="admin-section block animate-fade-in">
@@ -182,6 +192,49 @@ if (isAuthenticated) {
                                 </div>
                             </div>
                         ))}
+                    </div>
+                </div>
+
+                <div id="sec-s" class="admin-section hidden space-y-8 animate-fade-in">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        
+                        <div class="bg-white rounded-[3rem] p-10 shadow-xl border border-pink-50">
+                            <h2 class="text-2xl font-serif font-bold text-slate-800 mb-6 border-b border-pink-50 pb-4">Kapcsolati adatok</h2>
+                            <form id="admin-settings-form" class="space-y-6">
+                                <div class="space-y-2">
+                                    <label class="text-[10px] uppercase tracking-widest font-bold text-slate-400 ml-2">Email cím</label>
+                                    <input type="email" name="contact_email" value={getSetting('contact_email')} class="w-full p-4 rounded-2xl bg-slate-50 border-none ring-1 ring-slate-200 outline-none focus:ring-2 focus:ring-pink-500 transition-all" />
+                                </div>
+                                <div class="space-y-2">
+                                    <label class="text-[10px] uppercase tracking-widest font-bold text-slate-400 ml-2">Telefonszám</label>
+                                    <input type="text" name="contact_phone" value={getSetting('contact_phone')} class="w-full p-4 rounded-2xl bg-slate-50 border-none ring-1 ring-slate-200 outline-none focus:ring-2 focus:ring-pink-500 transition-all" />
+                                </div>
+                                <div class="space-y-2">
+                                    <label class="text-[10px] uppercase tracking-widest font-bold text-slate-400 ml-2">Cím (Helyszín)</label>
+                                    <input type="text" name="contact_address" value={getSetting('contact_address')} class="w-full p-4 rounded-2xl bg-slate-50 border-none ring-1 ring-slate-200 outline-none focus:ring-2 focus:ring-pink-500 transition-all" />
+                                </div>
+                                <button type="submit" class="w-full py-4 bg-pink-600 text-white font-bold rounded-2xl shadow-lg hover:bg-pink-700 transition-all active:scale-95">Adatok mentése</button>
+                            </form>
+                        </div>
+
+                        <div class="bg-white rounded-[3rem] p-10 shadow-xl border border-pink-50">
+                            <h2 class="text-2xl font-serif font-bold text-slate-800 mb-6 border-b border-pink-50 pb-4">Napi nyitvatartás</h2>
+                            <form id="admin-hours-form" class="space-y-4">
+                                {openingHours.map((day) => (
+                                    <div class="grid grid-cols-4 items-center gap-2 p-3 bg-slate-50/50 rounded-2xl border border-slate-100">
+                                        <span class="text-xs font-bold text-slate-600">{day.day_name}</span>
+                                        <input type="text" name={`open_${day.day_id}`} value={day.open_time} placeholder="08:00" class="p-2 rounded-lg border-none ring-1 ring-slate-200 text-xs text-center outline-none bg-white focus:ring-pink-500" disabled={day.is_closed} />
+                                        <input type="text" name={`close_${day.day_id}`} value={day.close_time} placeholder="17:00" class="p-2 rounded-lg border-none ring-1 ring-slate-200 text-xs text-center outline-none bg-white focus:ring-pink-500" disabled={day.is_closed} />
+                                        <label class="flex items-center justify-center gap-1 cursor-pointer">
+                                            <input type="checkbox" name={`closed_${day.day_id}`} checked={day.is_closed} class="w-4 h-4 accent-pink-600" />
+                                            <span class="text-[10px] font-bold text-slate-400 uppercase">Zárva</span>
+                                        </label>
+                                    </div>
+                                ))}
+                                <button type="submit" class="w-full py-4 bg-slate-900 text-white font-bold rounded-2xl shadow-lg hover:bg-black transition-all active:scale-95 mt-4">Időpontok frissítése</button>
+                            </form>
+                        </div>
+
                     </div>
                 </div>
             </div>
@@ -357,6 +410,42 @@ if (isAuthenticated) {
                     location.reload();
                 }
             });
+        });
+
+        // 4. BEÁLLÍTÁSOK LOGIKA
+        const settingsForm = document.getElementById('admin-settings-form') as HTMLFormElement;
+        settingsForm?.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData(settingsForm);
+            
+            for (const [key, value] of formData.entries()) {
+                await supabase.from('site_settings').upsert({ key, value });
+            }
+            alert('Beállítások sikeresen mentve!');
+            sessionStorage.setItem('activeAdminTab', 'sec-s');
+            location.reload();
+        });
+
+        const hoursForm = document.getElementById('admin-hours-form') as HTMLFormElement;
+        hoursForm?.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData(hoursForm);
+            
+            // Itt végigzongorázunk a 7 napon (day_id 1-7)
+            for (let i = 1; i <= 7; i++) {
+                const open_time = formData.get(`open_${i}`);
+                const close_time = formData.get(`close_${i}`);
+                const is_closed = formData.get(`closed_${i}`) === 'on';
+
+                await supabase.from('opening_hours').update({
+                    open_time,
+                    close_time,
+                    is_closed
+                }).eq('day_id', i);
+            }
+            alert('Nyitvatartás frissítve!');
+            sessionStorage.setItem('activeAdminTab', 'sec-s');
+            location.reload();
         });
     });
 </script>

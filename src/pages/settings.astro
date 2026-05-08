@@ -1,0 +1,75 @@
+---
+import Layout from '../layouts/Layout.astro';
+import { supabase } from '../lib/supabase';
+
+// Adatok lekérése a szerver oldalon
+const { data: hours } = await supabase.from('opening_hours').select('*').order('day_id');
+const { data: settings } = await supabase.from('site_settings').select('*');
+
+const email = settings?.find(s => s.key === 'contact_email')?.value;
+const phone = settings?.find(s => s.key === 'contact_phone')?.value;
+const address = settings?.find(s => s.key === 'contact_address')?.value;
+---
+
+<Layout title="Beállítások | Admin">
+  <main class="max-w-4xl mx-auto py-20 px-4">
+    <h1 class="text-3xl font-serif mb-10">Weboldal Beállítások</h1>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-12">
+      
+      <section class="bg-white p-8 rounded-3xl border border-stone-200 shadow-sm">
+        <h2 class="text-xl font-bold mb-6">Kapcsolati adatok</h2>
+        <form id="settings-form" class="space-y-4">
+          <div>
+            <label class="block text-sm text-stone-500 mb-1">Email</label>
+            <input type="email" name="contact_email" value={email} class="w-full border p-3 rounded-xl" />
+          </div>
+          <div>
+            <label class="block text-sm text-stone-500 mb-1">Telefonszám</label>
+            <input type="text" name="contact_phone" value={phone} class="w-full border p-3 rounded-xl" />
+          </div>
+          <div>
+            <label class="block text-sm text-stone-500 mb-1">Cím</label>
+            <input type="text" name="contact_address" value={address} class="w-full border p-3 rounded-xl" />
+          </div>
+          <button type="submit" class="w-full bg-pink-600 text-white py-3 rounded-xl font-bold hover:bg-pink-700">Mentés</button>
+        </form>
+      </section>
+
+      <section class="bg-white p-8 rounded-3xl border border-stone-200 shadow-sm">
+        <h2 class="text-xl font-bold mb-6">Nyitvatartás (Naponta)</h2>
+        <form id="hours-form" class="space-y-3">
+          {hours?.map((day) => (
+            <div class="flex items-center gap-2 p-2 border-b border-stone-50">
+              <span class="w-24 font-medium">{day.day_name}</span>
+              <input type="text" name={`open_${day.day_id}`} value={day.open_time} placeholder="08:00" class="w-20 border p-1 rounded-md text-center" disabled={day.is_closed} />
+              <span>-</span>
+              <input type="text" name={`close_${day.day_id}`} value={day.close_time} placeholder="17:00" class="w-20 border p-1 rounded-md text-center" disabled={day.is_closed} />
+              <label class="flex items-center gap-1 ml-auto">
+                <input type="checkbox" name={`closed_${day.day_id}`} checked={day.is_closed} />
+                <span class="text-xs">Zárva</span>
+              </label>
+            </div>
+          ))}
+          <button type="submit" class="w-full mt-4 bg-stone-800 text-white py-3 rounded-xl font-bold hover:bg-black">Időpontok frissítése</button>
+        </form>
+      </section>
+    </div>
+  </main>
+</Layout>
+
+<script>
+  import { supabase } from '../lib/supabase';
+
+  // Elérhetőségek mentése
+  document.getElementById('settings-form')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const formData = new FormData(e.target as HTMLFormElement);
+    for (const [key, value] of formData.entries()) {
+      await supabase.from('site_settings').upsert({ key, value });
+    }
+    alert('Adatok mentve!');
+  });
+
+  // Nyitvatartás mentése logic... (hasonlóan upsert-tel)
+</script>

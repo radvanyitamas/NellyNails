@@ -2,21 +2,17 @@
 // src/components/Contact.astro
 import { supabase } from '../lib/supabase';
 
-const { data: settings } = await supabase.from('site_settings').select('*');
+// 1. Adatok lekérése az új táblákból
+const { data: settingsData } = await supabase.from('site_settings').select('*');
+const { data: openingHours } = await supabase.from('opening_hours').select('*').order('day_id');
 
-const contact = settings?.find(s => s.key === 'contact')?.value || {
-  phone: "+36 30 732 8747",
-  email: "nellirad@gmail.com",
-  zip: "6721",
-  city: "Szeged",
-  street: "Baktói kiskertek",
-  houseNumber: "1."
-};
+// Adatok szétválogatása
+const email = settingsData?.find(s => s.key === 'contact_email')?.value || "nellirad@gmail.com";
+const phone = settingsData?.find(s => s.key === 'contact_phone')?.value || "+36 30 732 8747";
+const address = settingsData?.find(s => s.key === 'contact_address')?.value || "5630 Mezőberény, Példa utca 1.";
 
-const hours = settings?.find(s => s.key === 'hours')?.value || {
-  workdays: "15:00 - 20:00",
-  weekends: "10:00 - 15:00"
-};
+// A nyitvatartást átadjuk a naptárnak (JSON formátumban a dataset-en keresztül)
+const hoursMap = openingHours || [];
 ---
 
 <section id="kapcsolat" class="py-24 px-4 bg-white relative">
@@ -37,7 +33,7 @@ const hours = settings?.find(s => s.key === 'hours')?.value || {
               </div>
               <div>
                 <p class="text-[10px] text-slate-400 font-bold uppercase tracking-[0.2em] mb-1">Hívj bátran</p>
-                <a href={`tel:${contact.phone.replace(/\s/g, '')}`} class="text-xl font-bold text-slate-800 hover:text-pink-600 transition-colors tracking-tight">{contact.phone}</a>
+                <a href={`tel:${phone.replace(/\s/g, '')}`} class="text-xl font-bold text-slate-800 hover:text-pink-600 transition-colors tracking-tight">{phone}</a>
               </div>
             </div>
 
@@ -47,7 +43,7 @@ const hours = settings?.find(s => s.key === 'hours')?.value || {
               </div>
               <div>
                 <p class="text-[10px] text-slate-400 font-bold uppercase tracking-[0.2em] mb-1">Írj nekem</p>
-                <a href={`mailto:${contact.email}`} class="text-lg font-semibold text-slate-800 hover:text-pink-600 transition-colors">{contact.email}</a>
+                <a href={`mailto:${email}`} class="text-lg font-semibold text-slate-800 hover:text-pink-600 transition-colors">{email}</a>
               </div>
             </div>
 
@@ -57,7 +53,7 @@ const hours = settings?.find(s => s.key === 'hours')?.value || {
               </div>
               <div>
                 <p class="text-[10px] text-slate-400 font-bold uppercase tracking-[0.2em] mb-1">Helyszín</p>
-                <p class="text-lg font-semibold text-slate-800">{contact.zip} {contact.city}, {contact.street} {contact.houseNumber}</p>
+                <p class="text-lg font-semibold text-slate-800">{address}</p>
               </div>
             </div>
           </div>
@@ -67,21 +63,21 @@ const hours = settings?.find(s => s.key === 'hours')?.value || {
           <h3 class="text-xl font-bold mb-6 text-slate-800 flex items-center">
             <span class="w-2 h-2 bg-pink-500 rounded-full mr-3"></span> Nyitvatartás
           </h3>
-          <div class="space-y-4">
-            <div class="flex justify-between border-b border-slate-200 pb-3 italic text-sm">
-              <span class="text-slate-500 font-light">Hétfő - Péntek</span>
-              <span class="text-slate-900 font-bold">{hours.workdays}</span>
-            </div>
-            <div class="flex justify-between border-b border-slate-200 pb-3 italic text-sm">
-              <span class="text-slate-500 font-light">Szombat - Vasárnap</span>
-              <span class="text-slate-900 font-bold">{hours.weekends}</span>
-            </div>
+          <div class="space-y-3">
+            {hoursMap.map((day) => (
+              <div class="flex justify-between border-b border-slate-200 pb-2 text-sm">
+                <span class={day.is_closed ? "text-slate-400" : "text-slate-600"}>{day.day_name}</span>
+                <span class={day.is_closed ? "text-red-400 font-medium" : "text-slate-900 font-bold"}>
+                  {day.is_closed ? "Zárva" : `${day.open_time} - ${day.close_time}`}
+                </span>
+              </div>
+            ))}
           </div>
         </div>
       </div>
 
       <div class="bg-slate-50 p-8 md:p-12 rounded-[2.5rem] border border-pink-100 shadow-xl relative overflow-hidden">
-        <form id="booking-form" class="space-y-6" data-hours={JSON.stringify(hours)}>
+        <form id="booking-form" class="space-y-6" data-hours={JSON.stringify(hoursMap)}>
           <div class="space-y-4">
             <input type="text" name="name" required placeholder="Teljes név" class="w-full p-4 rounded-2xl bg-white border-none ring-1 ring-slate-200 focus:ring-2 focus:ring-pink-500 outline-none transition-all shadow-sm" />
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -110,15 +106,6 @@ const hours = settings?.find(s => s.key === 'hours')?.value || {
         <div id="status-container" class="mt-6 hidden p-6 rounded-3xl text-center font-bold border"></div>
       </div>
     </div>
-
-    <div class="mt-16 rounded-[3rem] overflow-hidden shadow-2xl h-112.5 border-8 border-white ring-1 ring-slate-100">
-      <iframe 
-        src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2758.123!2d20.147!3d46.253!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zNDbCsDE1JzExLjAiTiAyMMKwMDgnNDkuMiJF!5e0!3m2!1shu!2shu!4v123456789" 
-        class="w-full h-full border-0" 
-        allowfullscreen="" 
-        loading="lazy"
-      ></iframe>
-    </div>
   </div>
 </section>
 
@@ -138,7 +125,8 @@ const hours = settings?.find(s => s.key === 'hours')?.value || {
   const finalInput = document.getElementById('final-date-input') as HTMLInputElement | null;
   const submitBtn = document.getElementById('submit-btn') as HTMLButtonElement | null;
 
-  const hoursData = JSON.parse(form?.dataset.hours || '{}');
+  // Az összes nap nyitvatartása tömbben
+  const hoursArray = JSON.parse(form?.dataset.hours || '[]');
   let bookedTimestamps: number[] = [];
 
   async function fetchBookedSlots() {
@@ -154,35 +142,35 @@ const hours = settings?.find(s => s.key === 'hours')?.value || {
   function generateSlots(day: Date) {
     if (!slotsDiv || !selectionArea) return;
     slotsDiv.innerHTML = '';
-    selectionArea.classList.remove('hidden');
-
-    const now = new Date(); // Aktuális idő lekérése az összehasonlításhoz
-
-    const dayNum = day.getDay();
-    const isWeekend = (dayNum === 0 || dayNum === 6);
-    const range = isWeekend ? hoursData.weekends : hoursData.workdays;
     
-    const [startStr, endStr] = range.split(' - ');
-    const startHour = parseInt(startStr.split(':')[0]);
-    const endHour = parseInt(endStr.split(':')[0]);
+    // Keressük ki az adott naphoz tartozó nyitvatartást
+    // getDay(): 0=Vasárnap, 1=Hétfő... A mi DB-nkben: 1=Hétfő, 7=Vasárnap
+    const jsDay = day.getDay();
+    const dbDayId = jsDay === 0 ? 7 : jsDay;
+    const dayConfig = hoursArray.find((d: any) => d.day_id === dbDayId);
 
+    if (!dayConfig || dayConfig.is_closed) {
+        slotsDiv.innerHTML = '<p class="col-span-4 text-center text-slate-400 py-4 italic text-sm">Ezen a napon zárva tartok.</p>';
+        selectionArea.classList.remove('hidden');
+        return;
+    }
+
+    selectionArea.classList.remove('hidden');
+    const now = new Date();
+
+    const startHour = parseInt(dayConfig.open_time.split(':')[0]);
+    const endHour = parseInt(dayConfig.close_time.split(':')[0]);
     const threeHoursInMs = 3 * 60 * 60 * 1000;
 
     for (let h = startHour; h < endHour; h++) {
-      for (let m = 0; m < 60; m += 15) {
+      for (let m = 0; m < 60; m += 30) { // 30 perces ugrásokkal kínálunk fel időpontot
         const slotDate = new Date(day);
         slotDate.setHours(h, m, 0, 0);
         const slotTime = slotDate.getTime();
 
-        // 1. ELLENŐRZÉS: Múltbéli időpont? (Mai nap esetén a mostani óra/perc előtt)
         const isPast = slotDate < now;
+        const isConflict = bookedTimestamps.some(bookedTime => Math.abs(slotTime - bookedTime) < threeHoursInMs);
 
-        // 2. ELLENŐRZÉS: ÜTKÖZÉSVIZSGÁLAT (Oda-vissza 3 óra a foglalásokkal)
-        const isConflict = bookedTimestamps.some(bookedTime => {
-            return Math.abs(slotTime - bookedTime) < threeHoursInMs;
-        });
-
-        // Ha bármelyik igaz, akkor tiltjuk a gombot
         const isBlocked = isPast || isConflict;
 
         const btn = document.createElement('button');
@@ -240,7 +228,16 @@ const hours = settings?.find(s => s.key === 'hours')?.value || {
       if (btnSpan) btnSpan.textContent = 'Feldolgozás...';
 
       try {
-        const res = await fetch('/api/book', { method: 'POST', body: new FormData(form) });
+        // Átalakítva JSON küldésre a jobb kompatibilitás érdekében
+        const formData = new FormData(form);
+        const data = Object.fromEntries(formData.entries());
+
+        const res = await fetch('/api/book', { 
+            method: 'POST', 
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data) 
+        });
+
         if (statusCont) {
           statusCont.classList.remove('hidden');
           if (res.ok) {
