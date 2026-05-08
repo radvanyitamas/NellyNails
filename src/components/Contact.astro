@@ -5,12 +5,12 @@ import { supabase } from '../lib/supabase';
 const { data: settings } = await supabase.from('site_settings').select('*');
 
 const contact = settings?.find(s => s.key === 'contact')?.value || {
-  phone: "+36 30 433 0624",
-  email: "radvanyi.tamas910105@gmail.com",
+  phone: "+36 30 732 8747",
+  email: "nellirad@gmail.com",
   zip: "6721",
   city: "Szeged",
-  street: "Hullám utca",
-  houseNumber: "3."
+  street: "Baktói kiskertek",
+  houseNumber: "1."
 };
 
 const hours = settings?.find(s => s.key === 'hours')?.value || {

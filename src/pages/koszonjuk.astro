@@ -10,11 +10,11 @@ const nameParam = Astro.url.searchParams.get('name') || 'Vendég';
 // 2. DINAMIKUS ELÉRHETŐSÉGEK LEKÉRÉSE A SUPABASE-BŐL
 const { data: settings } = await supabase.from('site_settings').select('*');
 const contact = settings?.find(s => s.key === 'contact')?.value || {
-  phone: "+36 30 433 0624",
+  phone: "+36 30 732 8747",
   zip: "6721",
   city: "Szeged",
-  street: "Hullám utca",
-  houseNumber: "3."
+  street: "Baktói kiskertek",
+  houseNumber: "1."
 };
 
 let googleCalendarUrl = "";
@@ -93,7 +93,7 @@ if (dateParam) {
           <a 
             href={googleCalendarUrl}
             target="_blank"
-            class="group block w-full py-5 bg-pink-600 text-white font-bold rounded-2xl hover:bg-pink-700 transition-all shadow-xl hover:shadow-pink-200 active:scale-95 flex items-center justify-center gap-3"
+            class="group block w-full py-5 bg-pink-600 text-white font-bold rounded-2xl hover:bg-pink-700 transition-all shadow-xl hover:shadow-pink-200 active:scale-95 items-center justify-center gap-3"
           >
             <svg class="w-6 h-6 transition-transform group-hover:scale-110" fill="currentColor" viewBox="0 0 24 24">
               <path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V10h14v10zM9 14H7v-2h2v2zm4 0h-2v-2h2v2zm4 0h-2v-2h2v2zm-8 4H7v-2h2v2zm4 0h-2v-2h2v2zm4 0h-2v-2h2v2z"/>

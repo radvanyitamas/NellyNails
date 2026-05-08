@@ -55,8 +55,8 @@ export function getEmailHtml(name: string, date: string, confirmLink: string, ma
         </div>
 
         <div class="footer">
-          <p><b>Helyszín:</b> 6721 Szeged, Hullám utca 3.<br>
-          <b>Mobil:</b> +36 30 433 0624</p>
+          <p><b>Helyszín:</b> 6721 Szeged, Baktói kiskertek.<br>
+          <b>Mobil:</b> +36 30 732 8747</p>
           <p style="font-size: 11px; color: #cbd5e1; margin-top: 20px;">© 2026 Nails by Nelly. Minden jog fenntartva.</p>
         </div>
       </div>
