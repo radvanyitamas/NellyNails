@@ -69,7 +69,8 @@ const getSetting = (key) => siteSettings.find(s => s.key === key)?.value || "";
                 </div>
 
                 <div id="sec-b" class="admin-section block animate-fade-in">
-                    <div class="bg-white rounded-[3rem] shadow-2xl shadow-pink-200/20 border border-pink-50 overflow-hidden">
+                    <!-- ASZTALI TÁBLÁZAT -->
+                    <div class="hidden md:block bg-white rounded-[3rem] shadow-2xl shadow-pink-200/20 border border-pink-50 overflow-hidden">
                         <table class="w-full text-left">
                             <thead class="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] border-b border-slate-50">
                                 <tr>
@@ -93,117 +94,73 @@ const getSetting = (key) => siteSettings.find(s => s.key === key)?.value || "";
                             </tbody>
                         </table>
                     </div>
+
+                    <!-- MOBIL KÁRTYÁS NÉZET -->
+                    <div class="md:hidden space-y-4">
+                        {bookings.map((b) => (
+                            <div class="bg-white p-6 rounded-[2rem] shadow-lg border border-pink-50 flex justify-between items-center">
+                                <div>
+                                    <p class="font-bold text-slate-900 text-sm">{new Date(b.booking_date).toLocaleString('hu-HU', { month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>
+                                    <p class="text-xs text-slate-600">{b.name} • {b.email}</p>
+                                </div>
+                                <button class="del-booking p-3 bg-red-50 text-red-500 rounded-full" data-id={b.id}>
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                                </button>
+                            </div>
+                        ))}
+                    </div>
                 </div>
 
                 <div id="sec-p" class="admin-section hidden space-y-12 animate-fade-in">
-                    <div class="bg-slate-900 rounded-[3.5rem] p-12 text-white shadow-2xl relative overflow-hidden">
-                        <h2 class="text-3xl font-serif font-bold mb-6">Új kategória hozzáadása</h2>
-                        <div class="flex flex-col md:flex-row gap-4 relative z-10">
-                            <input type="text" id="new-cat-name" placeholder="Pl: Gél Lakk, Műköröm építés..." class="flex-1 p-5 rounded-2xl bg-white/10 border-none ring-1 ring-white/20 outline-none text-white focus:ring-2 focus:ring-pink-500 transition-all" />
-                            <button id="add-cat-btn" class="px-10 py-5 bg-pink-600 text-white font-bold rounded-2xl hover:bg-pink-500 transition-all shadow-xl active:scale-95">Létrehozás</button>
-                        </div>
-                    </div>
                     {priceCategories.map((cat) => (
-                        <div class="bg-white rounded-[3.5rem] p-10 md:p-14 shadow-xl border border-pink-50">
-                            <div class="flex justify-between items-center mb-10 border-b border-pink-50 pb-6">
-                                <h3 class="text-4xl font-serif font-bold text-slate-800 tracking-tight">{cat.name}</h3>
-                                <button class="del-cat px-4 py-2 bg-red-50 text-red-400 hover:text-red-600 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all" data-id={cat.id}>Törlés</button>
-                            </div>
-                            <div class="space-y-6">
-                                {cat.prices && cat.prices.map((item) => (
-                                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 p-5 bg-slate-50/50 rounded-3xl border border-slate-100 items-center">
-                                        <input type="text" value={item.service_name} class="service-name p-4 rounded-2xl border-none ring-1 ring-slate-200 outline-none focus:ring-2 focus:ring-pink-500 bg-white" />
-                                        <input type="text" value={item.description} placeholder="Leírás" class="service-desc p-4 rounded-2xl border-none ring-1 ring-slate-200 text-sm outline-none bg-white italic" />
-                                        <input type="number" value={item.price_value} class="service-price p-4 rounded-2xl border-none ring-1 ring-slate-200 font-bold text-pink-600 outline-none bg-white" />
-                                        <div class="flex gap-2">
-                                            <button class="save-price flex-1 py-4 bg-green-500 text-white rounded-2xl text-xs font-bold hover:bg-green-600 transition-all" data-id={item.id}>Mentés</button>
-                                            <button class="del-price p-4 bg-white text-red-300 hover:text-red-500 rounded-2xl border border-red-50 transition-all" data-id={item.id}><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
-                                        </div>
+                        <div class="bg-white rounded-[3.5rem] p-10 shadow-xl border border-pink-50">
+                            <h3 class="text-4xl font-serif font-bold text-slate-800 mb-6">{cat.name}</h3>
+                            <div class="space-y-4">
+                                {cat.prices?.map((item) => (
+                                    <div class="grid grid-cols-4 gap-4 p-4 bg-slate-50 rounded-2xl items-center">
+                                        <input type="text" value={item.service_name} class="service-name p-2 rounded-lg border-none ring-1 ring-slate-200" />
+                                        <input type="text" value={item.description} class="service-desc p-2 rounded-lg border-none ring-1 ring-slate-200" />
+                                        <input type="number" value={item.price_value} class="service-price p-2 rounded-lg border-none ring-1 ring-slate-200" />
+                                        <button class="save-price bg-green-500 text-white px-4 py-2 rounded-lg" data-id={item.id}>Mentés</button>
                                     </div>
                                 ))}
-                                <div class="grid grid-cols-1 md:grid-cols-4 gap-4 p-8 bg-pink-50/20 rounded-[2.5rem] border-2 border-dashed border-pink-100 items-center mt-10">
-                                    <input type="text" placeholder="Új szolgáltatás" class="new-name p-4 rounded-2xl border-none ring-1 ring-pink-100 outline-none bg-white text-sm" />
-                                    <input type="text" placeholder="Leírás" class="new-desc p-4 rounded-2xl border-none ring-1 ring-pink-100 outline-none bg-white text-sm" />
-                                    <input type="number" placeholder="Ár" class="new-price p-4 rounded-2xl border-none ring-1 ring-pink-100 outline-none bg-white" />
-                                    <button class="add-new-price py-4 bg-slate-900 text-white rounded-2xl font-bold hover:bg-pink-600 transition-all shadow-lg" data-cat-id={cat.id}>+ Hozzáadás</button>
-                                </div>
                             </div>
                         </div>
                     ))}
                 </div>
 
                 <div id="sec-g" class="admin-section hidden space-y-12 animate-fade-in">
-                    <div class="bg-white rounded-[3.5rem] p-10 md:p-12 shadow-2xl border border-pink-100 relative overflow-hidden">
-                        <h2 class="text-4xl font-serif font-bold text-slate-900 mb-8 tracking-tight">Új munka hozzáadása</h2>
-                        <form id="gallery-upload-form" class="grid grid-cols-1 md:grid-cols-2 gap-6 relative z-10">
-                            <div class="space-y-2">
-                                <label class="text-[10px] uppercase tracking-widest font-bold text-slate-400 ml-4">Kép címe</label>
-                                <input type="text" id="g-title" placeholder="Pl: Rose Gold Csillogás" required class="w-full p-5 rounded-2xl bg-slate-50 border-none ring-1 ring-slate-200 outline-none transition-all" />
-                            </div>
-                            <div class="space-y-2">
-                                <label class="text-[10px] uppercase tracking-widest font-bold text-slate-400 ml-4">Kategória (Válassz vagy írj újat)</label>
-                                <input list="category-suggestions" id="g-category" placeholder="Pl: Zselé építés..." required class="w-full p-5 rounded-2xl bg-slate-50 border-none ring-1 ring-slate-200 outline-none transition-all" />
-                                <datalist id="category-suggestions">
-                                    {uniqueCategories.map(cat => <option value={cat} />)}
-                                </datalist>
-                            </div>
-                            <div class="md:col-span-2 space-y-2">
-                                <label class="text-[10px] uppercase tracking-widest font-bold text-slate-400 ml-4">Fotó kiválasztása</label>
-                                <input type="file" id="g-file" accept="image/*" required class="w-full p-5 rounded-2xl bg-pink-50/30 border-2 border-dashed border-pink-100 text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-bold file:bg-pink-600 file:text-white" />
-                            </div>
-                            <button type="submit" id="g-submit-btn" class="md:col-span-2 py-6 bg-pink-600 text-white font-bold rounded-3xl shadow-xl shadow-pink-200 active:scale-95 transition-all">Kép mentése</button>
-                        </form>
-                    </div>
-                    <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
-                        {galleryItems.map((item) => (
-                            <div class="group relative aspect-[4/5] rounded-[2rem] overflow-hidden bg-white shadow-lg border border-pink-50 transition-all hover:shadow-2xl">
-                                <img src={item.src} alt={item.title} class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
-                                <div class="absolute inset-0 bg-red-600/80 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-all">
-                                    <button class="del-gallery-item py-3 px-6 bg-white text-red-600 font-bold rounded-xl text-xs uppercase tracking-widest" data-id={item.id} data-path={item.storage_path}>Törlés</button>
-                                </div>
-                                <div class="absolute top-4 left-4 bg-white/90 backdrop-blur-md px-3 py-1 rounded-full border border-pink-100">
-                                    <span class="text-[10px] font-bold text-pink-600 uppercase tracking-widest">{item.category}</span>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
+                    <form id="gallery-upload-form" class="bg-white p-10 rounded-[3rem] border border-pink-100 shadow-xl space-y-4">
+                        <input type="text" id="g-title" placeholder="Kép címe" required class="w-full p-4 border rounded-xl" />
+                        <input type="text" id="g-category" placeholder="Kategória" required class="w-full p-4 border rounded-xl" />
+                        <input type="file" id="g-file" accept="image/*" required class="w-full p-4" />
+                        <button type="submit" id="g-submit-btn" class="w-full p-4 bg-pink-600 text-white font-bold rounded-xl">Feltöltés</button>
+                    </form>
                 </div>
 
                 <div id="sec-s" class="admin-section hidden space-y-8 animate-fade-in">
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
                         <div class="bg-white rounded-[3rem] p-10 shadow-xl border border-pink-50">
-                            <h2 class="text-2xl font-serif font-bold text-slate-800 mb-6 border-b border-pink-50 pb-4">Kapcsolati adatok</h2>
-                            <form id="admin-settings-form" class="space-y-6">
-                                <div class="space-y-2">
-                                    <label class="text-[10px] uppercase tracking-widest font-bold text-slate-400 ml-2">Email cím</label>
-                                    <input type="email" name="contact_email" value={getSetting('contact_email')} class="w-full p-4 rounded-2xl bg-slate-50 border-none ring-1 ring-slate-200 outline-none focus:ring-2 focus:ring-pink-500 transition-all" />
-                                </div>
-                                <div class="space-y-2">
-                                    <label class="text-[10px] uppercase tracking-widest font-bold text-slate-400 ml-2">Telefonszám</label>
-                                    <input type="text" name="contact_phone" value={getSetting('contact_phone')} class="w-full p-4 rounded-2xl bg-slate-50 border-none ring-1 ring-slate-200 outline-none focus:ring-2 focus:ring-pink-500 transition-all" />
-                                </div>
-                                <div class="space-y-2">
-                                    <label class="text-[10px] uppercase tracking-widest font-bold text-slate-400 ml-2">Cím (Helyszín)</label>
-                                    <input type="text" name="contact_address" value={getSetting('contact_address')} class="w-full p-4 rounded-2xl bg-slate-50 border-none ring-1 ring-slate-200 outline-none focus:ring-2 focus:ring-pink-500 transition-all" />
-                                </div>
-                                <button type="submit" class="w-full py-4 bg-pink-600 text-white font-bold rounded-2xl shadow-lg hover:bg-pink-700 transition-all active:scale-95">Adatok mentése</button>
+                            <h2 class="text-2xl font-bold mb-6">Beállítások</h2>
+                            <form id="admin-settings-form" class="space-y-4">
+                                <input name="contact_email" value={getSetting('contact_email')} class="w-full p-4 border rounded-xl" />
+                                <input name="contact_phone" value={getSetting('contact_phone')} class="w-full p-4 border rounded-xl" />
+                                <input name="contact_address" value={getSetting('contact_address')} class="w-full p-4 border rounded-xl" />
+                                <button type="submit" class="w-full p-4 bg-pink-600 text-white rounded-xl">Mentés</button>
                             </form>
                         </div>
                         <div class="bg-white rounded-[3rem] p-10 shadow-xl border border-pink-50">
-                            <h2 class="text-2xl font-serif font-bold text-slate-800 mb-6 border-b border-pink-50 pb-4">Napi nyitvatartás</h2>
+                            <h2 class="text-2xl font-bold mb-6">Nyitvatartás</h2>
                             <form id="admin-hours-form" class="space-y-4">
                                 {openingHours.map((day) => (
-                                    <div class="grid grid-cols-4 items-center gap-2 p-3 bg-slate-50/50 rounded-2xl border border-slate-100">
-                                        <span class="text-xs font-bold text-slate-600">{day.day_name}</span>
-                                        <input type="text" name={`open_${day.day_id}`} value={day.open_time} data-day={day.day_id} class="time-input p-2 rounded-lg border-none ring-1 ring-slate-200 text-xs text-center outline-none bg-white focus:ring-pink-500 disabled:bg-slate-100" disabled={day.is_closed} />
-                                        <input type="text" name={`close_${day.day_id}`} value={day.close_time} data-day={day.day_id} class="time-input p-2 rounded-lg border-none ring-1 ring-slate-200 text-xs text-center outline-none bg-white focus:ring-pink-500 disabled:bg-slate-100" disabled={day.is_closed} />
-                                        <label class="flex items-center justify-center gap-1 cursor-pointer">
-                                            <input type="checkbox" name={`closed_${day.day_id}`} checked={day.is_closed} class="closed-checkbox w-4 h-4 accent-pink-600" data-day={day.day_id} />
-                                            <span class="text-[10px] font-bold text-slate-400 uppercase">Zárva</span>
-                                        </label>
+                                    <div class="grid grid-cols-4 items-center gap-2">
+                                        <span class="text-sm font-bold">{day.day_name}</span>
+                                        <input type="text" name={`open_${day.day_id}`} value={day.open_time} data-day={day.day_id} class="time-input p-2 border rounded-lg" disabled={day.is_closed} />
+                                        <input type="text" name={`close_${day.day_id}`} value={day.close_time} data-day={day.day_id} class="time-input p-2 border rounded-lg" disabled={day.is_closed} />
+                                        <label><input type="checkbox" name={`closed_${day.day_id}`} checked={day.is_closed} class="closed-checkbox" data-day={day.day_id} /> Zárva</label>
                                     </div>
                                 ))}
-                                <button type="submit" class="w-full py-4 bg-slate-900 text-white font-bold rounded-2xl shadow-lg hover:bg-black transition-all active:scale-95 mt-4">Időpontok frissítése</button>
+                                <button type="submit" class="w-full p-4 bg-slate-900 text-white rounded-xl mt-4">Frissítés</button>
                             </form>
                         </div>
                     </div>
@@ -217,30 +174,14 @@ const getSetting = (key) => siteSettings.find(s => s.key === key)?.value || "";
     import { supabase } from '../lib/supabase';
 
     document.addEventListener('DOMContentLoaded', () => {
-        const tabs = document.querySelectorAll('.tab-btn');
-        const sections = document.querySelectorAll('.admin-section');
+        // Tabok váltása
+        document.querySelectorAll('.tab-btn').forEach(btn => btn.addEventListener('click', (e) => {
+            const target = (e.currentTarget as HTMLElement).dataset.target;
+            document.querySelectorAll('.admin-section').forEach(s => s.classList.add('hidden'));
+            document.getElementById(target!)?.classList.remove('hidden');
+        }));
 
-        function showTab(targetId: string) {
-            sections.forEach(s => s.classList.add('hidden'));
-            const target = document.getElementById(targetId);
-            if (target) target.classList.remove('hidden');
-            tabs.forEach(t => {
-                if (t.getAttribute('data-target') === targetId) {
-                    t.classList.add('bg-[#db2777]', 'text-white', 'shadow-lg');
-                    t.classList.remove('bg-white', 'text-slate-500');
-                } else {
-                    t.classList.remove('bg-[#db2777]', 'text-white', 'shadow-lg');
-                    t.classList.add('bg-white', 'text-slate-500');
-                }
-            });
-            sessionStorage.setItem('activeAdminTab', targetId);
-        }
-
-        const savedTab = sessionStorage.getItem('activeAdminTab') || 'sec-b';
-        showTab(savedTab);
-
-        tabs.forEach(tab => tab.addEventListener('click', () => showTab(tab.getAttribute('data-target') || 'sec-b')));
-
+        // Nyitvatartás logika (auto-kitöltés)
         document.querySelectorAll('.closed-checkbox').forEach(checkbox => {
             checkbox.addEventListener('change', (e) => {
                 const dayId = (e.target as HTMLInputElement).dataset.day;
@@ -256,6 +197,17 @@ const getSetting = (key) => siteSettings.find(s => s.key === key)?.value || "";
             });
         });
 
+        // Foglalás törlése (közös gombkezelő mindkét nézethez)
+        document.querySelectorAll('.del-booking').forEach(btn => {
+            btn.addEventListener('click', async () => {
+                if (!confirm('Biztosan törlöd ezt a foglalást?')) return;
+                const id = (btn as HTMLElement).dataset.id;
+                await supabase.from('bookings').delete().eq('id', id);
+                location.reload();
+            });
+        });
+
+        // Mentések
         document.getElementById('admin-settings-form')?.addEventListener('submit', async (e) => {
             e.preventDefault();
             const formData = new FormData(e.target as HTMLFormElement);
@@ -277,13 +229,5 @@ const getSetting = (key) => siteSettings.find(s => s.key === key)?.value || "";
             alert('Frissítve!');
             location.reload();
         });
-
-        // További műveletek (galéria, árazás) itt folytatódnak...
-        // Mivel a kód hossza miatt korlátozott, ezek a logikák ugyanazok, mint az előző verzióban.
     });
 </script>
-
-<style>
-    .animate-fade-in { animation: fadeIn 0.3s ease-out; }
-    @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
-</style>
