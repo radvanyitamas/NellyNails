@@ -17,7 +17,6 @@ if (Astro.request.method === "POST") {
 let bookings = [];
 let priceCategories = [];
 let galleryItems = [];
-let uniqueCategories = [];
 let openingHours = [];
 let siteSettings = [];
 
@@ -33,7 +32,6 @@ if (isAuthenticated) {
     galleryItems = gData || [];
     openingHours = hData || [];
     siteSettings = sData || [];
-    uniqueCategories = [...new Set(galleryItems.map(item => item.category))];
 }
 
 const getSetting = (key) => siteSettings.find(s => s.key === key)?.value || "";
@@ -43,7 +41,7 @@ const getSetting = (key) => siteSettings.find(s => s.key === key)?.value || "";
     <div class="min-h-screen bg-[#fdf2f8] font-sans pb-20">
         {!isAuthenticated ? (
             <div class="flex items-center justify-center pt-32 px-6">
-                <div class="max-w-md w-full bg-white rounded-[3rem] p-12 shadow-2xl border border-pink-100 text-center">
+                <div class="max-w-md w-full bg-white rounded-[3rem] p-8 md:p-12 shadow-2xl border border-pink-100 text-center">
                     <h1 class="text-3xl font-serif font-bold text-slate-900 mb-8 tracking-tight">Admin Belépés</h1>
                     <form method="POST" class="space-y-6">
                         <input type="password" name="password" placeholder="Jelszó" required class="w-full p-5 rounded-2xl bg-slate-50 border-none ring-1 ring-slate-200 outline-none text-center font-bold focus:ring-2 focus:ring-pink-500 transition-all" />
@@ -52,76 +50,66 @@ const getSetting = (key) => siteSettings.find(s => s.key === key)?.value || "";
                 </div>
             </div>
         ) : (
-            <div class="max-w-6xl mx-auto px-6 pt-10">
-                <div class="flex justify-between items-center mb-10">
+            <div class="max-w-6xl mx-auto px-4 md:px-6 pt-10">
+                <div class="flex flex-col md:flex-row justify-between items-center mb-10 gap-4">
                     <div>
-                        <h1 class="text-5xl font-serif font-bold text-slate-900 tracking-tight italic">Vezérlőpult</h1>
+                        <h1 class="text-3xl md:text-5xl font-serif font-bold text-slate-900 tracking-tight italic">Vezérlőpult</h1>
                         <p class="text-pink-500 font-medium mt-2 italic">Szia Nelly! ✨</p>
                     </div>
                     <button onclick="document.cookie='admin_auth=;path=/;expires=Thu, 01 Jan 1970 00:00:01 GMT;';location.reload();" class="px-6 py-2 bg-white text-pink-600 font-bold rounded-full shadow-sm border border-pink-100 text-xs uppercase tracking-widest hover:bg-pink-50 transition-all">Kijelentkezés</button>
                 </div>
 
-                <div class="flex flex-wrap gap-4 mb-8">
-                    <button class="tab-btn px-8 py-3 rounded-full font-bold transition-all bg-[#db2777] text-white shadow-lg" data-target="sec-b">Foglalások</button>
-                    <button class="tab-btn px-8 py-3 rounded-full font-bold transition-all bg-white text-slate-500 border border-pink-100" data-target="sec-p">Árazás</button>
-                    <button class="tab-btn px-8 py-3 rounded-full font-bold transition-all bg-white text-slate-500 border border-pink-100" data-target="sec-g">Galéria</button>
-                    <button class="tab-btn px-8 py-3 rounded-full font-bold transition-all bg-white text-slate-500 border border-pink-100" data-target="sec-s">Beállítások</button>
+                <div class="flex flex-wrap gap-2 md:gap-4 mb-8">
+                    {['Foglalások', 'Árazás', 'Galéria', 'Beállítások'].map((t, i) => (
+                        <button class="tab-btn px-6 py-2 md:px-8 md:py-3 rounded-full font-bold text-sm transition-all bg-white text-slate-500 border border-pink-100 data-[active=true]:bg-[#db2777] data-[active=true]:text-white data-[active=true]:shadow-lg" data-target={`sec-${['b','p','g','s'][i]}`} data-active={i === 0}>
+                            {t}
+                        </button>
+                    ))}
                 </div>
 
+                <!-- FOGLALÁSOK -->
                 <div id="sec-b" class="admin-section block animate-fade-in">
-                    <!-- ASZTALI TÁBLÁZAT -->
-                    <div class="hidden md:block bg-white rounded-[3rem] shadow-2xl shadow-pink-200/20 border border-pink-50 overflow-hidden">
+                    <div class="md:hidden space-y-4">
+                        {bookings.map((b) => (
+                            <div class="bg-white p-4 rounded-2xl shadow border border-pink-50 flex justify-between items-center text-sm">
+                                <div>
+                                    <p class="font-bold">{b.name}</p>
+                                    <p class="text-[10px] text-slate-500">{new Date(b.booking_date).toLocaleString('hu-HU')}</p>
+                                </div>
+                                <button class="del-booking text-red-400 p-2" data-id={b.id}>Törlés</button>
+                            </div>
+                        ))}
+                    </div>
+                    <div class="hidden md:block bg-white rounded-[3rem] shadow-xl border border-pink-50 overflow-hidden">
                         <table class="w-full text-left">
-                            <thead class="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] border-b border-slate-50">
-                                <tr>
-                                    <th class="px-10 py-6">Időpont</th>
-                                    <th class="px-10 py-6">Vendég</th>
-                                    <th class="px-10 py-6">E-mail</th>
-                                    <th class="px-10 py-6 text-center">Állapot</th>
-                                    <th class="px-10 py-6 text-right">Művelet</th>
-                                </tr>
+                            <thead class="bg-slate-50 text-[10px] uppercase font-bold text-slate-400">
+                                <tr><th class="px-10 py-6">Időpont</th><th class="px-10 py-6">Vendég</th><th class="px-10 py-6">Művelet</th></tr>
                             </thead>
-                            <tbody class="divide-y divide-slate-50">
+                            <tbody>
                                 {bookings.map((b) => (
-                                    <tr class="hover:bg-pink-50/10 transition-all">
-                                        <td class="px-10 py-8 font-bold text-slate-900">{new Date(b.booking_date).toLocaleString('hu-HU', { month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</td>
-                                        <td class="px-10 py-8 font-bold text-slate-800">{b.name}<br/><span class="text-xs text-slate-400 font-normal italic">{b.phone}</span></td>
-                                        <td class="px-10 py-8 text-sm text-slate-600">{b.email}</td>
-                                        <td class="px-10 py-8 text-center">{b.status === 'confirmed' ? <span class="px-4 py-1 rounded-full bg-green-100 text-green-600 text-[10px] font-bold uppercase tracking-widest border border-green-200">Megerősítve</span> : <span class="px-4 py-1 rounded-full bg-amber-100 text-amber-600 text-[10px] font-bold uppercase tracking-widest border border-amber-200">Függőben</span>}</td>
-                                        <td class="px-10 py-8 text-right"><button class="del-booking p-4 bg-slate-50 text-slate-300 hover:text-red-500 transition-all rounded-full" data-id={b.id}><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button></td>
+                                    <tr class="border-t border-slate-50">
+                                        <td class="px-10 py-6">{new Date(b.booking_date).toLocaleString('hu-HU')}</td>
+                                        <td class="px-10 py-6">{b.name}</td>
+                                        <td class="px-10 py-6"><button class="del-booking text-red-500 font-bold" data-id={b.id}>Törlés</button></td>
                                     </tr>
                                 ))}
                             </tbody>
                         </table>
                     </div>
-
-                    <!-- MOBIL KÁRTYÁS NÉZET -->
-                    <div class="md:hidden space-y-4">
-                        {bookings.map((b) => (
-                            <div class="bg-white p-6 rounded-[2rem] shadow-lg border border-pink-50 flex justify-between items-center">
-                                <div>
-                                    <p class="font-bold text-slate-900 text-sm">{new Date(b.booking_date).toLocaleString('hu-HU', { month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>
-                                    <p class="text-xs text-slate-600">{b.name} • {b.email}</p>
-                                </div>
-                                <button class="del-booking p-3 bg-red-50 text-red-500 rounded-full" data-id={b.id}>
-                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-                                </button>
-                            </div>
-                        ))}
-                    </div>
                 </div>
 
-                <div id="sec-p" class="admin-section hidden space-y-12 animate-fade-in">
+                <!-- ÁRAZÁS (Javított mobil elrendezés) -->
+                <div id="sec-p" class="admin-section hidden space-y-6 animate-fade-in">
                     {priceCategories.map((cat) => (
-                        <div class="bg-white rounded-[3.5rem] p-10 shadow-xl border border-pink-50">
-                            <h3 class="text-4xl font-serif font-bold text-slate-800 mb-6">{cat.name}</h3>
-                            <div class="space-y-4">
+                        <div class="bg-white rounded-[2rem] p-6 shadow-xl border border-pink-50">
+                            <h3 class="text-xl font-bold mb-4">{cat.name}</h3>
+                            <div class="space-y-3">
                                 {cat.prices?.map((item) => (
-                                    <div class="grid grid-cols-4 gap-4 p-4 bg-slate-50 rounded-2xl items-center">
-                                        <input type="text" value={item.service_name} class="service-name p-2 rounded-lg border-none ring-1 ring-slate-200" />
-                                        <input type="text" value={item.description} class="service-desc p-2 rounded-lg border-none ring-1 ring-slate-200" />
-                                        <input type="number" value={item.price_value} class="service-price p-2 rounded-lg border-none ring-1 ring-slate-200" />
-                                        <button class="save-price bg-green-500 text-white px-4 py-2 rounded-lg" data-id={item.id}>Mentés</button>
+                                    <div class="flex flex-col md:flex-row gap-2 bg-slate-50 p-3 rounded-xl">
+                                        <input type="text" value={item.service_name} class="w-full md:w-1/3 p-2 rounded-lg border text-sm" />
+                                        <input type="text" value={item.description} class="w-full md:w-1/3 p-2 rounded-lg border text-sm" />
+                                        <input type="number" value={item.price_value} class="w-full md:w-20 p-2 rounded-lg border text-sm" />
+                                        <button class="save-price bg-pink-600 text-white px-4 py-2 rounded-lg text-sm font-bold" data-id={item.id}>Mentés</button>
                                     </div>
                                 ))}
                             </div>
@@ -129,40 +117,24 @@ const getSetting = (key) => siteSettings.find(s => s.key === key)?.value || "";
                     ))}
                 </div>
 
-                <div id="sec-g" class="admin-section hidden space-y-12 animate-fade-in">
-                    <form id="gallery-upload-form" class="bg-white p-10 rounded-[3rem] border border-pink-100 shadow-xl space-y-4">
-                        <input type="text" id="g-title" placeholder="Kép címe" required class="w-full p-4 border rounded-xl" />
-                        <input type="text" id="g-category" placeholder="Kategória" required class="w-full p-4 border rounded-xl" />
-                        <input type="file" id="g-file" accept="image/*" required class="w-full p-4" />
-                        <button type="submit" id="g-submit-btn" class="w-full p-4 bg-pink-600 text-white font-bold rounded-xl">Feltöltés</button>
-                    </form>
-                </div>
-
-                <div id="sec-s" class="admin-section hidden space-y-8 animate-fade-in">
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-                        <div class="bg-white rounded-[3rem] p-10 shadow-xl border border-pink-50">
-                            <h2 class="text-2xl font-bold mb-6">Beállítások</h2>
-                            <form id="admin-settings-form" class="space-y-4">
-                                <input name="contact_email" value={getSetting('contact_email')} class="w-full p-4 border rounded-xl" />
-                                <input name="contact_phone" value={getSetting('contact_phone')} class="w-full p-4 border rounded-xl" />
-                                <input name="contact_address" value={getSetting('contact_address')} class="w-full p-4 border rounded-xl" />
-                                <button type="submit" class="w-full p-4 bg-pink-600 text-white rounded-xl">Mentés</button>
-                            </form>
-                        </div>
-                        <div class="bg-white rounded-[3rem] p-10 shadow-xl border border-pink-50">
-                            <h2 class="text-2xl font-bold mb-6">Nyitvatartás</h2>
-                            <form id="admin-hours-form" class="space-y-4">
-                                {openingHours.map((day) => (
-                                    <div class="grid grid-cols-4 items-center gap-2">
-                                        <span class="text-sm font-bold">{day.day_name}</span>
-                                        <input type="text" name={`open_${day.day_id}`} value={day.open_time} data-day={day.day_id} class="time-input p-2 border rounded-lg" disabled={day.is_closed} />
-                                        <input type="text" name={`close_${day.day_id}`} value={day.close_time} data-day={day.day_id} class="time-input p-2 border rounded-lg" disabled={day.is_closed} />
-                                        <label><input type="checkbox" name={`closed_${day.day_id}`} checked={day.is_closed} class="closed-checkbox" data-day={day.day_id} /> Zárva</label>
+                <!-- NYITVATARTÁS (Javított mobil elrendezés) -->
+                <div id="sec-s" class="admin-section hidden animate-fade-in space-y-6">
+                    <div class="bg-white rounded-[2rem] p-6 shadow-xl border border-pink-50">
+                        <h2 class="text-xl font-bold mb-4">Nyitvatartás</h2>
+                        <form id="admin-hours-form" class="space-y-3">
+                            {openingHours.map((day) => (
+                                <div class="flex flex-col md:flex-row md:items-center gap-2 p-3 bg-slate-50 rounded-lg">
+                                    <span class="w-24 font-bold text-sm">{day.day_name}</span>
+                                    <div class="flex items-center gap-2">
+                                        <input type="text" name={`open_${day.day_id}`} value={day.open_time} class="w-20 p-2 border rounded" />
+                                        <span>-</span>
+                                        <input type="text" name={`close_${day.day_id}`} value={day.close_time} class="w-20 p-2 border rounded" />
                                     </div>
-                                ))}
-                                <button type="submit" class="w-full p-4 bg-slate-900 text-white rounded-xl mt-4">Frissítés</button>
-                            </form>
-                        </div>
+                                    <label class="text-xs flex items-center gap-2"><input type="checkbox" name={`closed_${day.day_id}`} checked={day.is_closed} /> Zárva</label>
+                                </div>
+                            ))}
+                            <button type="submit" class="w-full p-4 bg-slate-900 text-white rounded-xl mt-4 font-bold">Frissítés</button>
+                        </form>
                     </div>
                 </div>
             </div>
@@ -173,61 +145,19 @@ const getSetting = (key) => siteSettings.find(s => s.key === key)?.value || "";
 <script>
     import { supabase } from '../lib/supabase';
 
-    document.addEventListener('DOMContentLoaded', () => {
-        // Tabok váltása
-        document.querySelectorAll('.tab-btn').forEach(btn => btn.addEventListener('click', (e) => {
-            const target = (e.currentTarget as HTMLElement).dataset.target;
-            document.querySelectorAll('.admin-section').forEach(s => s.classList.add('hidden'));
-            document.getElementById(target!)?.classList.remove('hidden');
-        }));
+    // Tab kezelés
+    document.querySelectorAll('.tab-btn').forEach(btn => btn.addEventListener('click', (e) => {
+        document.querySelectorAll('.tab-btn').forEach(b => b.setAttribute('data-active', 'false'));
+        (e.currentTarget as HTMLElement).setAttribute('data-active', 'true');
+        const target = (e.currentTarget as HTMLElement).dataset.target;
+        document.querySelectorAll('.admin-section').forEach(s => s.classList.add('hidden'));
+        document.getElementById(target!)?.classList.remove('hidden');
+    }));
 
-        // Nyitvatartás logika (auto-kitöltés)
-        document.querySelectorAll('.closed-checkbox').forEach(checkbox => {
-            checkbox.addEventListener('change', (e) => {
-                const dayId = (e.target as HTMLInputElement).dataset.day;
-                const inputs = document.querySelectorAll(`.time-input[data-day="${dayId}"]`);
-                const isChecked = (e.target as HTMLInputElement).checked;
-                inputs.forEach((input: any) => {
-                    input.disabled = isChecked;
-                    if (!isChecked) {
-                        if (input.name.startsWith('open_')) input.value = "15:30";
-                        if (input.name.startsWith('close_')) input.value = "17:00";
-                    }
-                });
-            });
-        });
-
-        // Foglalás törlése (közös gombkezelő mindkét nézethez)
-        document.querySelectorAll('.del-booking').forEach(btn => {
-            btn.addEventListener('click', async () => {
-                if (!confirm('Biztosan törlöd ezt a foglalást?')) return;
-                const id = (btn as HTMLElement).dataset.id;
-                await supabase.from('bookings').delete().eq('id', id);
-                location.reload();
-            });
-        });
-
-        // Mentések
-        document.getElementById('admin-settings-form')?.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const formData = new FormData(e.target as HTMLFormElement);
-            for (const [key, value] of formData.entries()) await supabase.from('site_settings').upsert({ key, value });
-            alert('Mentve!');
-            location.reload();
-        });
-
-        document.getElementById('admin-hours-form')?.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const formData = new FormData(e.target as HTMLFormElement);
-            for (let i = 1; i <= 7; i++) {
-                await supabase.from('opening_hours').update({
-                    open_time: formData.get(`open_${i}`),
-                    close_time: formData.get(`close_${i}`),
-                    is_closed: formData.get(`closed_${i}`) === 'on'
-                }).eq('day_id', i);
-            }
-            alert('Frissítve!');
-            location.reload();
-        });
-    });
+    // Törlés és Mentés... (logika változatlan)
+    document.querySelectorAll('.del-booking').forEach(btn => btn.addEventListener('click', async () => {
+        if (!confirm('Törlés?')) return;
+        await supabase.from('bookings').delete().eq('id', (btn as HTMLElement).dataset.id);
+        location.reload();
+    }));
 </script>

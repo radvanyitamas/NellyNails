@@ -2,4 +2,18 @@
 
 html {
   scroll-behavior: smooth;
+  /* Fontos: az oldal alja se legyen "csonka" */
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  /* Egy nagyon finom, balról jobbra és fentről lefelé ható pasztell gradiens */
+  background: linear-gradient(135deg, #ffffff 0%, #fdf2f8 50%, #ffffff 100%);
+  background-attachment: fixed;
+  background-size: 100% 100%;
+  
+  /* Ez biztosítja, hogy a tartalom mindig tiszta maradjon */
+  color: #1e293b; /* slate-800 */
 }
