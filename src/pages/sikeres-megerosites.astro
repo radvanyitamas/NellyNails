@@ -1,11 +1,22 @@
 ---
 import Layout from '../layouts/Layout.astro';
 ---
-<Layout title="Sikeres">
-  <div class="min-h-screen flex items-center justify-center bg-[#fdf2f8] text-center">
-    <div class="bg-white p-12 rounded-[3rem] shadow-2xl border border-pink-100">
-      <h1 class="text-2xl font-bold mb-4">Sikeresen megerősítve! 💖</h1>
-      <a href="/" class="px-8 py-3 bg-pink-600 text-white rounded-xl">Vissza</a>
+
+<Layout title="Sikeres megerősítés">
+  <!-- p-4 a biztonságos oldalsó margóért mobilon -->
+  <div class="min-h-screen flex items-center justify-center bg-[#fdf2f8] p-4 text-center">
+    <!-- p-8 és rounded-[2rem] a mobilbarát méretezéshez -->
+    <div class="bg-white p-8 md:p-12 rounded-[2rem] md:rounded-[3rem] shadow-2xl border border-pink-100 max-w-sm w-full">
+      <div class="text-5xl mb-6">💖</div>
+      <h1 class="text-2xl font-bold text-slate-900 mb-6">Sikeresen megerősítve!</h1>
+      <p class="text-slate-500 mb-8 text-sm">Az időpontod bekerült a naptáramba. Várlak szeretettel!</p>
+      
+      <a 
+        href="/" 
+        class="block w-full py-4 bg-pink-600 text-white font-bold rounded-2xl hover:bg-pink-700 transition-all shadow-lg shadow-pink-200 active:scale-95 uppercase tracking-widest text-sm"
+      >
+        Vissza a főoldalra
+      </a>
     </div>
   </div>
 </Layout>

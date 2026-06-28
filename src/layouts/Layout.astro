@@ -3,7 +3,6 @@
 import '../styles/global.css';
 import Footer from '../components/Footer.astro';
 
-// JAVÍTÁS: Astro-native verziót használunk, amihez NEM kell React
 import Analytics from '@vercel/analytics/astro';
 import SpeedInsights from '@vercel/speed-insights/astro';
 
@@ -11,10 +10,10 @@ const { title } = Astro.props;
 ---
 
 <!doctype html>
-<html lang="hu">
+<html lang="hu" class="scroll-smooth">
 	<head>
 		<meta charset="UTF-8" />
-		<meta name="viewport" content="width=device-width" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
         
         <link rel="icon" href="/favicon.ico" sizes="any" />
         <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
@@ -27,9 +26,9 @@ const { title } = Astro.props;
 		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 		<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Plus+Jakarta+Sans:wght@200..800&display=swap" rel="stylesheet">
 	</head>
-	<body id="top" class="bg-white min-h-screen flex flex-col">
+	<body class="bg-white min-h-screen flex flex-col antialiased text-slate-900">
 		
-		<main class="flex-grow">
+		<main class="grow w-full">
 			<slot />
 		</main>
 
@@ -41,10 +40,17 @@ const { title } = Astro.props;
 </html>
 
 <style is:global>
-	html,
+	html {
+		margin: 0;
+		padding: 0;
+		width: 100%;
+		/* Megakadályozza a vízszintes görgetést, ha egy elem túl széles lenne */
+		overflow-x: hidden;
+	}
 	body {
 		margin: 0;
+		padding: 0;
 		width: 100%;
-		scroll-behavior: smooth;
+		overflow-x: hidden;
 	}
 </style>

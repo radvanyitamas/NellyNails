@@ -9,10 +9,12 @@ import Contact from '../components/Contact.astro';
 
 <Layout title="Nails by Nelly - Műkörmös">
   <Navigation />
-  <main>
-    <Hero />
-    <Gallery /> 
+  <main class="w-full overflow-hidden">
+    <div class="max-w-7xl mx-auto px-4 md:px-6">
+      <Hero />
+      <Gallery /> 
       <Pricing />
       <Contact />
+    </div>
   </main>
 </Layout>

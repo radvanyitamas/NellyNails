@@ -1,109 +1,94 @@
 ---
-// ==========================================
-// 1. SZERVER OLDALI LOGIKA (Astro)
-// ==========================================
 import Layout from '../layouts/Layout.astro';
 import { supabase } from '../lib/supabase';
 
-// Lekérjük a nyitvatartási adatokat és a beállításokat a Supabase-ből
-// .order('day_id') biztosítja, hogy hétfőtől vasárnapig legyenek sorrendben a napok
 const { data: hours } = await supabase.from('opening_hours').select('*').order('day_id');
 const { data: settings } = await supabase.from('site_settings').select('*');
 
-// Kinyerjük az aktuális értékeket a tömbből, hogy az input mezők előre ki legyenek töltve
 const email = settings?.find(s => s.key === 'contact_email')?.value;
 const phone = settings?.find(s => s.key === 'contact_phone')?.value;
 const address = settings?.find(s => s.key === 'contact_address')?.value;
 ---
 
 <Layout title="Beállítások | Admin">
-  <main class="max-w-4xl mx-auto py-20 px-4">
-    <h1 class="text-3xl font-serif mb-10">Weboldal Beállítások</h1>
+  <main class="max-w-4xl mx-auto py-12 md:py-20 px-4">
+    <h1 class="text-2xl md:text-3xl font-serif mb-8 md:mb-10 text-center md:text-left">Weboldal Beállítások</h1>
 
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-12">
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 md:gap-12">
       
       <!-- KAPCSOLATI ADATOK SZEKCIÓ -->
-      <section class="bg-white p-8 rounded-3xl border border-stone-200 shadow-sm">
-        <h2 class="text-xl font-bold mb-6">Kapcsolati adatok</h2>
+      <section class="bg-white p-6 md:p-8 rounded-3xl border border-stone-200 shadow-sm">
+        <h2 class="text-lg md:text-xl font-bold mb-6">Kapcsolati adatok</h2>
         
-        <!-- Az admin felületen látható aktuális adatok emlékeztetőül -->
-        <div class="mb-6 p-4 bg-stone-50 rounded-xl text-sm border border-stone-100">
-            <p class="font-bold text-stone-700">Jelenlegi elérhetőségek:</p>
-            <p class="text-stone-600">📞 {phone}</p>
-            <p class="text-stone-600">✉️ {email}</p>
+        <div class="mb-6 p-4 bg-stone-50 rounded-xl text-xs md:text-sm border border-stone-100">
+            <p class="font-bold text-stone-700 mb-1">Jelenlegi elérhetőségek:</p>
+            <p class="text-stone-600 truncate">📞 {phone}</p>
+            <p class="text-stone-600 truncate">✉️ {email}</p>
         </div>
 
         <form id="settings-form" class="space-y-4">
           <div>
-            <label class="block text-sm text-stone-500 mb-1">Email</label>
-            <input type="email" name="contact_email" value={email} class="w-full border p-3 rounded-xl" />
+            <label class="block text-xs text-stone-500 mb-1 font-bold uppercase">Email</label>
+            <input type="email" name="contact_email" value={email} class="w-full border p-3 rounded-xl text-sm" />
           </div>
           <div>
-            <label class="block text-sm text-stone-500 mb-1">Telefonszám</label>
-            <input type="text" name="contact_phone" value={phone} class="w-full border p-3 rounded-xl" />
+            <label class="block text-xs text-stone-500 mb-1 font-bold uppercase">Telefonszám</label>
+            <input type="text" name="contact_phone" value={phone} class="w-full border p-3 rounded-xl text-sm" />
           </div>
           <div>
-            <label class="block text-sm text-stone-500 mb-1">Cím</label>
-            <input type="text" name="contact_address" value={address} class="w-full border p-3 rounded-xl" />
+            <label class="block text-xs text-stone-500 mb-1 font-bold uppercase">Cím</label>
+            <input type="text" name="contact_address" value={address} class="w-full border p-3 rounded-xl text-sm" />
           </div>
-          <button type="submit" class="w-full bg-pink-600 text-white py-3 rounded-xl font-bold hover:bg-pink-700 transition-colors">Mentés</button>
+          <button type="submit" class="w-full bg-pink-600 text-white py-3 rounded-xl font-bold hover:bg-pink-700 transition-colors active:scale-[0.98]">Mentés</button>
         </form>
       </section>
 
       <!-- NYITVATARTÁS SZEKCIÓ -->
-      <section class="bg-white p-8 rounded-3xl border border-stone-200 shadow-sm">
-        <h2 class="text-xl font-bold mb-6">Nyitvatartás (Naponta)</h2>
-        <form id="hours-form" class="space-y-3">
+      <section class="bg-white p-6 md:p-8 rounded-3xl border border-stone-200 shadow-sm">
+        <h2 class="text-lg md:text-xl font-bold mb-6">Nyitvatartás</h2>
+        <form id="hours-form" class="space-y-2">
           {hours?.map((day) => (
-            <div class="flex items-center gap-2 p-2 border-b border-stone-50">
-              <span class="w-24 font-medium text-sm">{day.day_name}</span>
+            <div class="flex items-center gap-2 p-2 border-b border-stone-50 overflow-x-auto">
+              <span class="w-20 md:w-24 font-medium text-xs md:text-sm flex-shrink-0">{day.day_name}</span>
               
-              <!-- Nyitási és zárási időpontok -->
-              <input type="text" name={`open_${day.day_id}`} value={day.open_time} placeholder="08:00" class="w-16 border p-1 rounded-md text-center text-sm" />
-              <span>-</span>
-              <input type="text" name={`close_${day.day_id}`} value={day.close_time} placeholder="17:00" class="w-16 border p-1 rounded-md text-center text-sm" />
+              <div class="flex items-center gap-1">
+                <input type="text" name={`open_${day.day_id}`} value={day.open_time} placeholder="08:00" class="w-14 md:w-16 border p-1 rounded-md text-center text-xs md:text-sm" />
+                <span class="text-stone-400">-</span>
+                <input type="text" name={`close_${day.day_id}`} value={day.close_time} placeholder="17:00" class="w-14 md:w-16 border p-1 rounded-md text-center text-xs md:text-sm" />
+              </div>
               
-              <!-- Zárva checkbox -->
-              <label class="flex items-center gap-1 ml-auto cursor-pointer">
-                <input type="checkbox" name={`closed_${day.day_id}`} checked={day.is_closed} />
-                <span class="text-xs">Zárva</span>
+              <label class="flex items-center gap-1 ml-auto cursor-pointer flex-shrink-0">
+                <input type="checkbox" name={`closed_${day.day_id}`} checked={day.is_closed} class="w-4 h-4" />
+                <span class="text-[10px] md:text-xs text-stone-500">Zárva</span>
               </label>
             </div>
           ))}
-          <button type="submit" class="w-full mt-4 bg-stone-800 text-white py-3 rounded-xl font-bold hover:bg-black transition-colors">Időpontok frissítése</button>
+          <button type="submit" class="w-full mt-6 bg-stone-800 text-white py-3 rounded-xl font-bold hover:bg-black transition-colors active:scale-[0.98]">Időpontok frissítése</button>
         </form>
       </section>
     </div>
   </main>
 </Layout>
 
-<!-- ==========================================
-// 2. KLIENS OLDALI LOGIKA (JavaScript)
-// ========================================== -->
 <script>
   import { supabase } from '../lib/supabase';
 
-  // 1. Kapcsolati adatok mentése
   document.getElementById('settings-form')?.addEventListener('submit', async (e) => {
     e.preventDefault();
     const form = e.target as HTMLFormElement;
     const formData = new FormData(form);
     
-    // Végigiterálunk a form mezőin és frissítjük a Supabase-t
     for (const [key, value] of formData.entries()) {
       await supabase.from('site_settings').upsert({ key, value });
     }
     alert('Kapcsolati adatok sikeresen mentve!');
   });
 
-  // 2. Nyitvatartás mentése
   document.getElementById('hours-form')?.addEventListener('submit', async (e) => {
     e.preventDefault();
     const form = e.target as HTMLFormElement;
     const formData = new FormData(form);
 
-    // Mivel minden nap egy külön sor, egyesével frissítjük a napokat
-    // A ciklus feltételezi, hogy a 'day_id' 1-től 7-ig tart
     for (let i = 1; i <= 7; i++) {
         await supabase.from('opening_hours').update({
             open_time: formData.get(`open_${i}`),
@@ -112,6 +97,6 @@ const address = settings?.find(s => s.key === 'contact_address')?.value;
         }).eq('day_id', i);
     }
     alert('Nyitvatartás frissítve!');
-    window.location.reload(); // Frissítjük az oldalt a változások láthatósága miatt
+    window.location.reload();
   });
 </script>

@@ -5,20 +5,22 @@ import Navigation from '../components/Navigation.astro';
 
 <Layout title="Bejelentkezés | Nails by Nelly">
   <Navigation />
-  <main class="min-h-screen flex items-center justify-center bg-slate-50 px-4">
-    <div class="max-w-md w-full bg-white p-10 rounded-[3rem] shadow-2xl border border-pink-100">
-      <h1 class="text-3xl font-serif font-bold text-center mb-8 text-slate-900">Admin Belépés</h1>
+  <!-- 'p-4' biztosítja a minimális távolságot a szélétől -->
+  <main class="min-h-screen flex items-center justify-center bg-slate-50 p-4">
+    <!-- 'rounded-[2rem]' mobilon arányosabb, mint a 3rem -->
+    <div class="max-w-md w-full bg-white p-6 md:p-10 rounded-[2rem] md:rounded-[3rem] shadow-2xl border border-pink-100">
+      <h1 class="text-2xl md:text-3xl font-serif font-bold text-center mb-8 text-slate-900">Admin Belépés</h1>
       
       <form id="login-form" class="space-y-6">
         <div>
-          <label class="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2 ml-2">E-mail cím</label>
-          <input type="email" name="email" required class="w-full p-4 rounded-2xl bg-slate-50 border-none ring-1 ring-slate-200 focus:ring-2 focus:ring-pink-500 outline-none" />
+          <label class="block text-[10px] md:text-xs font-bold text-slate-400 uppercase tracking-widest mb-2 ml-2">E-mail cím</label>
+          <input type="email" name="email" required class="w-full p-4 rounded-xl md:rounded-2xl bg-slate-50 border-none ring-1 ring-slate-200 focus:ring-2 focus:ring-pink-500 outline-none transition-all" />
         </div>
         <div>
-          <label class="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2 ml-2">Jelszó</label>
-          <input type="password" name="password" required class="w-full p-4 rounded-2xl bg-slate-50 border-none ring-1 ring-slate-200 focus:ring-2 focus:ring-pink-500 outline-none" />
+          <label class="block text-[10px] md:text-xs font-bold text-slate-400 uppercase tracking-widest mb-2 ml-2">Jelszó</label>
+          <input type="password" name="password" required class="w-full p-4 rounded-xl md:rounded-2xl bg-slate-50 border-none ring-1 ring-slate-200 focus:ring-2 focus:ring-pink-500 outline-none transition-all" />
         </div>
-        <button type="submit" class="w-full py-5 bg-slate-900 text-white font-bold rounded-2xl hover:bg-slate-800 transition-all active:scale-95 shadow-xl">
+        <button type="submit" class="w-full py-4 md:py-5 bg-slate-900 text-white font-bold rounded-xl md:rounded-2xl hover:bg-slate-800 transition-all active:scale-[0.98] shadow-lg">
           Belépés
         </button>
       </form>
@@ -45,7 +47,6 @@ import Navigation from '../components/Navigation.astro';
       errorMsg!.textContent = "Hibás adatok!";
       errorMsg!.classList.remove('hidden');
     } else {
-      // Sikeres belépés után az adminra dobunk, már pw paraméter nélkül
       window.location.href = '/admin';
     }
   };
