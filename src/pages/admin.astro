@@ -279,10 +279,25 @@ const getSetting = (key) => siteSettings.find(s => s.key === key)?.value || "";
         });
 
         document.querySelectorAll('.del-booking').forEach(btn => btn.addEventListener('click', async (e) => {
-            if (!confirm('Biztosan törlöd a foglalást?')) return;
-            await supabase.from('bookings').delete().eq('id', (e.currentTarget as HTMLElement).dataset.id);
-            location.reload();
-        }));
+    const btn = e.currentTarget as HTMLElement;
+    const id = btn.dataset.id;
+    const reason = prompt('Add meg a törlés indokát:'); // Ha üresen hagyod, az "Nem lett megadva indok" lesz
+
+    if (!confirm('Biztosan törlöd a foglalást és küldesz emailt?')) return;
+
+    const response = await fetch('/api/cancel', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, reason })
+    });
+
+    if (response.ok) {
+        alert('Sikeres törlés és email küldés!');
+        location.reload();
+    } else {
+        alert('Hiba történt.');
+    }
+}));
 
         document.querySelectorAll('.save-price').forEach(btn => btn.addEventListener('click', async (e) => {
             const container = (e.currentTarget as HTMLElement).closest('.grid');
