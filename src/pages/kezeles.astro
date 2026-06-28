@@ -1,16 +1,24 @@
 ---
+// ==========================================
+// 1. SZERVER OLDALI LOGIKA (Astro Script)
+// ==========================================
 import Layout from '../layouts/Layout.astro';
 import { supabase } from '../lib/supabase';
 
+// Kinyerjük a 'token' nevű paramétert az URL-ből (pl. /lemondas?token=xyz123)
 const token = Astro.url.searchParams.get('token');
 
+// Lekérjük a Supabase adatbázisból azt az EGYETLEN ('single()') foglalást, 
+// aminek a 'cancel_token' oszlopa megegyezik az URL-ben lévő tokennel.
 const { data: booking } = await supabase
   .from('bookings')
   .select('*')
   .eq('cancel_token', token)
   .single();
 
+// Ha találtunk foglalást, a dátumát olvasható, magyar formátumra alakítjuk (pl. "június 28.")
 const formattedDate = booking ? new Date(booking.booking_date).toLocaleString('hu-HU', { month: 'long', day: 'numeric' }) : '';
+// A pontos időt is kiformázzuk (pl. "14:00")
 const formattedTime = booking ? new Date(booking.booking_date).toLocaleString('hu-HU', { hour: '2-digit', minute: '2-digit' }) : '';
 ---
 
@@ -24,55 +32,83 @@ const formattedTime = booking ? new Date(booking.booking_date).toLocaleString('h
 
         <div class="flex-1 flex items-center justify-center p-6">
             <div class="max-w-xl w-full bg-white rounded-[4rem] p-16 shadow-2xl shadow-pink-200/30 border border-pink-50 text-center relative overflow-hidden">
+                
+                {/* FELTÉTELES MEGJELENÍTÉS: 
+                  Ha létezik a foglalás (érvényes volt a token), akkor mutatjuk a lemondó felületet.
+                  Ha nem, akkor hibaüzenetet adunk.
+                */}
                 {booking ? (
                     <div id="booking-area">
                         <input type="hidden" id="token-data" value={token} />
+                        
                         <div class="w-24 h-24 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-10 text-red-500 shadow-inner">
                             <svg class="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                         </div>
+                        
                         <h1 class="text-5xl font-serif font-bold text-slate-900 mb-6 tracking-tight">Lemondás</h1>
                         <p class="text-slate-500 mb-12 italic font-medium">Sajnáljuk, ha közbejött valami. Biztosan lemondod?</p>
+                        
                         <div class="bg-slate-50 p-12 rounded-[3rem] border border-slate-100 mb-12 shadow-inner">
                             <p class="text-[10px] font-bold text-slate-400 uppercase tracking-[0.3em] mb-4">Lefoglalt időpont</p>
                             <p class="text-slate-700 font-bold text-lg mb-2">6721 Szeged, Hullám utca 3.</p>
                             <p class="text-4xl font-bold text-[#db2777] tracking-tight mb-2">{formattedDate} {formattedTime}</p>
                             <p class="text-slate-400 font-bold">+36 30 732 8747</p>
                         </div>
+                        
                         <div class="space-y-4">
                             <button id="cancel-btn" class="w-full py-6 bg-[#db2777] text-white font-bold rounded-[2rem] hover:bg-pink-700 transition-all shadow-xl shadow-pink-200 active:scale-95">Időpont lemondása</button>
                             <a href="/" class="block py-4 text-slate-400 font-bold hover:text-slate-600 transition-all">Mégsem, megtartom az időpontot</a>
                         </div>
                     </div>
                 ) : (
+                    /* Hibaüzenet: Ha rossz a link, vagy már korábban lemondták */
                     <div class="py-20 text-center"><p class="text-slate-400 italic text-xl">A foglalás nem található.</p></div>
                 )}
+
                 <div id="success-area" class="hidden py-10">
                     <div class="w-24 h-24 bg-green-50 rounded-full flex items-center justify-center mx-auto mb-10 text-green-500 shadow-inner text-4xl">✓</div>
                     <h2 class="text-5xl font-serif font-bold text-slate-900 mb-6 tracking-tight">Lemondva 🎀</h2>
                     <a href="/" class="inline-block w-full py-6 bg-slate-900 text-white rounded-[2rem] font-bold shadow-xl">Vissza a főoldalra</a>
                 </div>
+
             </div>
         </div>
     </div>
 </Layout>
 
+// ==========================================
+// 2. KLIENS OLDALI LOGIKA (Böngészőben futó Script)
+// ==========================================
 <script>
+    // Kikeresjük a HTML-ből a lemondás gombot és a rejtett mezőben tárolt tokent
     const btn = document.getElementById('cancel-btn');
     const token = (document.getElementById('token-data') as HTMLInputElement)?.value;
+    
     if (btn && token) {
+        // Gomb kattintás eseményfigyelője
         btn.addEventListener('click', async () => {
+            // Felugró ablakban megkérdezzük, biztos-e benne (ha a 'Mégse'-re nyom, a folyamat megszakad)
             if (!confirm('Biztosan lemondod?')) return;
+            
+            // Ha igent nyomott, átírjuk a gomb szövegét és letiltjuk, hogy ne tudja kétszer megnyomni
             btn.innerText = 'Feldolgozás...';
             (btn as HTMLButtonElement).disabled = true;
+            
+            // Meghívjuk a saját szerverünk '/api/cancel' végpontját, hogy törölje a foglalást
             const res = await fetch('/api/cancel', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ token })
+                body: JSON.stringify({ token }) // Elküldjük a tokent JSON formátumban
             });
+            
+            // Ha a törlés sikeres volt a szerveren (200 OK)
             if (res.ok) {
+                // Eltüntetjük a foglalás részleteit mutató dobozt
                 document.getElementById('booking-area')?.classList.add('hidden');
+                // Megjelenítjük a zöld pipás, "Lemondva" sikerképernyőt
                 document.getElementById('success-area')?.classList.remove('hidden');
             } else {
+                // Ha hiba volt (pl. megszakadt az internet), értesítjük a felhasználót és visszaállítjuk a gombot
                 alert('Hiba történt.');
                 btn.innerText = 'Időpont lemondása';
                 (btn as HTMLButtonElement).disabled = false;

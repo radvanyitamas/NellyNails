@@ -1,11 +1,16 @@
 ---
+// ==========================================
+// 1. SZERVER OLDALI LOGIKA (Astro)
+// ==========================================
 import Layout from '../layouts/Layout.astro';
 import { supabase } from '../lib/supabase';
 
-// Adatok lekérése a szerver oldalon
+// Lekérjük a nyitvatartási adatokat és a beállításokat a Supabase-ből
+// .order('day_id') biztosítja, hogy hétfőtől vasárnapig legyenek sorrendben a napok
 const { data: hours } = await supabase.from('opening_hours').select('*').order('day_id');
 const { data: settings } = await supabase.from('site_settings').select('*');
 
+// Kinyerjük az aktuális értékeket a tömbből, hogy az input mezők előre ki legyenek töltve
 const email = settings?.find(s => s.key === 'contact_email')?.value;
 const phone = settings?.find(s => s.key === 'contact_phone')?.value;
 const address = settings?.find(s => s.key === 'contact_address')?.value;
@@ -17,8 +22,17 @@ const address = settings?.find(s => s.key === 'contact_address')?.value;
 
     <div class="grid grid-cols-1 md:grid-cols-2 gap-12">
       
+      <!-- KAPCSOLATI ADATOK SZEKCIÓ -->
       <section class="bg-white p-8 rounded-3xl border border-stone-200 shadow-sm">
         <h2 class="text-xl font-bold mb-6">Kapcsolati adatok</h2>
+        
+        <!-- Az admin felületen látható aktuális adatok emlékeztetőül -->
+        <div class="mb-6 p-4 bg-stone-50 rounded-xl text-sm border border-stone-100">
+            <p class="font-bold text-stone-700">Jelenlegi elérhetőségek:</p>
+            <p class="text-stone-600">📞 {phone}</p>
+            <p class="text-stone-600">✉️ {email}</p>
+        </div>
+
         <form id="settings-form" class="space-y-4">
           <div>
             <label class="block text-sm text-stone-500 mb-1">Email</label>
@@ -32,44 +46,72 @@ const address = settings?.find(s => s.key === 'contact_address')?.value;
             <label class="block text-sm text-stone-500 mb-1">Cím</label>
             <input type="text" name="contact_address" value={address} class="w-full border p-3 rounded-xl" />
           </div>
-          <button type="submit" class="w-full bg-pink-600 text-white py-3 rounded-xl font-bold hover:bg-pink-700">Mentés</button>
+          <button type="submit" class="w-full bg-pink-600 text-white py-3 rounded-xl font-bold hover:bg-pink-700 transition-colors">Mentés</button>
         </form>
       </section>
 
+      <!-- NYITVATARTÁS SZEKCIÓ -->
       <section class="bg-white p-8 rounded-3xl border border-stone-200 shadow-sm">
         <h2 class="text-xl font-bold mb-6">Nyitvatartás (Naponta)</h2>
         <form id="hours-form" class="space-y-3">
           {hours?.map((day) => (
             <div class="flex items-center gap-2 p-2 border-b border-stone-50">
-              <span class="w-24 font-medium">{day.day_name}</span>
-              <input type="text" name={`open_${day.day_id}`} value={day.open_time} placeholder="08:00" class="w-20 border p-1 rounded-md text-center" disabled={day.is_closed} />
+              <span class="w-24 font-medium text-sm">{day.day_name}</span>
+              
+              <!-- Nyitási és zárási időpontok -->
+              <input type="text" name={`open_${day.day_id}`} value={day.open_time} placeholder="08:00" class="w-16 border p-1 rounded-md text-center text-sm" />
               <span>-</span>
-              <input type="text" name={`close_${day.day_id}`} value={day.close_time} placeholder="17:00" class="w-20 border p-1 rounded-md text-center" disabled={day.is_closed} />
-              <label class="flex items-center gap-1 ml-auto">
+              <input type="text" name={`close_${day.day_id}`} value={day.close_time} placeholder="17:00" class="w-16 border p-1 rounded-md text-center text-sm" />
+              
+              <!-- Zárva checkbox -->
+              <label class="flex items-center gap-1 ml-auto cursor-pointer">
                 <input type="checkbox" name={`closed_${day.day_id}`} checked={day.is_closed} />
                 <span class="text-xs">Zárva</span>
               </label>
             </div>
           ))}
-          <button type="submit" class="w-full mt-4 bg-stone-800 text-white py-3 rounded-xl font-bold hover:bg-black">Időpontok frissítése</button>
+          <button type="submit" class="w-full mt-4 bg-stone-800 text-white py-3 rounded-xl font-bold hover:bg-black transition-colors">Időpontok frissítése</button>
         </form>
       </section>
     </div>
   </main>
 </Layout>
 
+<!-- ==========================================
+// 2. KLIENS OLDALI LOGIKA (JavaScript)
+// ========================================== -->
 <script>
   import { supabase } from '../lib/supabase';
 
-  // Elérhetőségek mentése
+  // 1. Kapcsolati adatok mentése
   document.getElementById('settings-form')?.addEventListener('submit', async (e) => {
     e.preventDefault();
-    const formData = new FormData(e.target as HTMLFormElement);
+    const form = e.target as HTMLFormElement;
+    const formData = new FormData(form);
+    
+    // Végigiterálunk a form mezőin és frissítjük a Supabase-t
     for (const [key, value] of formData.entries()) {
       await supabase.from('site_settings').upsert({ key, value });
     }
-    alert('Adatok mentve!');
+    alert('Kapcsolati adatok sikeresen mentve!');
   });
 
-  // Nyitvatartás mentése logic... (hasonlóan upsert-tel)
+  // 2. Nyitvatartás mentése
+  document.getElementById('hours-form')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const form = e.target as HTMLFormElement;
+    const formData = new FormData(form);
+
+    // Mivel minden nap egy külön sor, egyesével frissítjük a napokat
+    // A ciklus feltételezi, hogy a 'day_id' 1-től 7-ig tart
+    for (let i = 1; i <= 7; i++) {
+        await supabase.from('opening_hours').update({
+            open_time: formData.get(`open_${i}`),
+            close_time: formData.get(`close_${i}`),
+            is_closed: formData.get(`closed_${i}`) === 'on'
+        }).eq('day_id', i);
+    }
+    alert('Nyitvatartás frissítve!');
+    window.location.reload(); // Frissítjük az oldalt a változások láthatósága miatt
+  });
 </script>
