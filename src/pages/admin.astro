@@ -1,19 +1,24 @@
 ---
+// --- BACKEND / SZERVER OLDALI KÓD (Astro Frontmatter) ---
 import Layout from '../layouts/Layout.astro';
 import { supabase } from '../lib/supabase';
 
+// Környezeti változók és sütik (cookies) ellenőrzése a belépéshez
 const ADMIN_PASSWORD = import.meta.env.ADMIN_PASSWORD; 
 const authCookie = Astro.cookies.get('admin_auth')?.value;
 const isAuthenticated = authCookie === ADMIN_PASSWORD;
 
+// Admin belépési jelszó ellenőrzése POST kérés esetén
 if (Astro.request.method === "POST") {
   const data = await Astro.request.formData();
   if (data.get("password") === ADMIN_PASSWORD) {
+    // Ha jó a jelszó, beállítjuk a sütit és frissítjük az oldalt
     Astro.cookies.set('admin_auth', ADMIN_PASSWORD, { path: '/' });
     return Astro.redirect('/admin');
   }
 }
 
+// Kezdőértékek deklarálása a Supabase-ből érkező adatoknak
 let bookings = [];
 let priceCategories = [];
 let galleryItems = [];
@@ -21,6 +26,7 @@ let uniqueCategories = [];
 let openingHours = [];
 let siteSettings = [];
 
+// Ha a felhasználó be van jelentkezve, lekérjük az összes adatot a Supabase-ből
 if (isAuthenticated) {
     const { data: bData } = await supabase.from('bookings').select('*').order('booking_date', { ascending: true });
     const { data: cData } = await supabase.from('price_categories').select('*, prices(*)').order('display_order', { ascending: true });
@@ -28,14 +34,18 @@ if (isAuthenticated) {
     const { data: hData } = await supabase.from('opening_hours').select('*').order('day_id', { ascending: true });
     const { data: sData } = await supabase.from('site_settings').select('*');
     
+    // Adatok átadása a lokális változóknak (ha nincs adat, üres tömböt kapnak)
     bookings = bData || [];
     priceCategories = cData || [];
     galleryItems = gData || [];
     openingHours = hData || [];
     siteSettings = sData || [];
+    
+    // Egyedi kategóriák kiszűrése a galériából a lenyíló ajánlásokhoz
     uniqueCategories = [...new Set(galleryItems.map(item => item.category))];
 }
 
+// Segédfüggvény az oldalbeállítások kulcs-érték alapú lekéréséhez
 const getSetting = (key) => siteSettings.find(s => s.key === key)?.value || "";
 ---
 
@@ -154,6 +164,7 @@ const getSetting = (key) => siteSettings.find(s => s.key === key)?.value || "";
                             <button type="submit" id="g-submit-btn" class="md:col-span-2 py-6 bg-pink-600 text-white font-bold rounded-3xl shadow-xl shadow-pink-200 active:scale-95 transition-all">Kép mentése</button>
                         </form>
                     </div>
+                    
                     <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
                         {galleryItems.map((item) => (
                             <div class="group relative aspect-[4/5] rounded-[2rem] overflow-hidden bg-white shadow-lg border border-pink-50 transition-all hover:shadow-2xl">
@@ -189,6 +200,7 @@ const getSetting = (key) => siteSettings.find(s => s.key === key)?.value || "";
                                 <button type="submit" class="w-full py-4 bg-pink-600 text-white font-bold rounded-2xl shadow-lg hover:bg-pink-700 transition-all active:scale-95">Adatok mentése</button>
                             </form>
                         </div>
+                        
                         <div class="bg-white rounded-[3rem] p-10 shadow-xl border border-pink-50">
                             <h2 class="text-2xl font-serif font-bold text-slate-800 mb-6 border-b border-pink-50 pb-4">Napi nyitvatartás</h2>
                             <form id="admin-hours-form" class="space-y-4">
@@ -214,12 +226,14 @@ const getSetting = (key) => siteSettings.find(s => s.key === key)?.value || "";
 </Layout>
 
 <script>
+    // --- KLIENS OLDALI JAVASCRIPT / TYPESCRIPT ---
     import { supabase } from '../lib/supabase';
 
     document.addEventListener('DOMContentLoaded', () => {
         const tabs = document.querySelectorAll('.tab-btn');
         const sections = document.querySelectorAll('.admin-section');
 
+        // Navigációs fülek logikája (Tab váltó)
         function showTab(targetId: string) {
             sections.forEach(s => s.classList.add('hidden'));
             const target = document.getElementById(targetId);
@@ -233,6 +247,7 @@ const getSetting = (key) => siteSettings.find(s => s.key === key)?.value || "";
                     t.classList.add('bg-white', 'text-slate-500');
                 }
             });
+            // Mentjük az aktív fület munkamenetbe, hogy frissítéskor ne ugorjon vissza az elsőre
             sessionStorage.setItem('activeAdminTab', targetId);
         }
 
@@ -241,6 +256,7 @@ const getSetting = (key) => siteSettings.find(s => s.key === key)?.value || "";
 
         tabs.forEach(tab => tab.addEventListener('click', () => showTab(tab.getAttribute('data-target') || 'sec-b')));
 
+        // Nyitvatartás: Zárva gomb kattintásra tiltja az idő mezőket
         document.querySelectorAll('.closed-checkbox').forEach(checkbox => {
             checkbox.addEventListener('change', (e) => {
                 const dayId = (e.target as HTMLInputElement).dataset.day;
@@ -256,6 +272,7 @@ const getSetting = (key) => siteSettings.find(s => s.key === key)?.value || "";
             });
         });
 
+        // Általános beállítások form beküldése
         document.getElementById('admin-settings-form')?.addEventListener('submit', async (e) => {
             e.preventDefault();
             const formData = new FormData(e.target as HTMLFormElement);
@@ -264,6 +281,7 @@ const getSetting = (key) => siteSettings.find(s => s.key === key)?.value || "";
             location.reload();
         });
 
+        // Nyitvatartás form beküldése
         document.getElementById('admin-hours-form')?.addEventListener('submit', async (e) => {
             e.preventDefault();
             const formData = new FormData(e.target as HTMLFormElement);
@@ -278,27 +296,29 @@ const getSetting = (key) => siteSettings.find(s => s.key === key)?.value || "";
             location.reload();
         });
 
+        // Foglalás törlése (API Route hívással)
         document.querySelectorAll('.del-booking').forEach(btn => btn.addEventListener('click', async (e) => {
-    const btn = e.currentTarget as HTMLElement;
-    const id = btn.dataset.id;
-    const reason = prompt('Add meg a törlés indokát:'); // Ha üresen hagyod, az "Nem lett megadva indok" lesz
+            const btn = e.currentTarget as HTMLElement;
+            const id = btn.dataset.id;
+            const reason = prompt('Add meg a törlés indokát:');
 
-    if (!confirm('Biztosan törlöd a foglalást és küldesz emailt?')) return;
+            if (!confirm('Biztosan törlöd a foglalást és küldesz emailt?')) return;
 
-    const response = await fetch('/api/cancel', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id, reason })
-    });
+            const response = await fetch('/api/cancel', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id, reason })
+            });
 
-    if (response.ok) {
-        alert('Sikeres törlés és email küldés!');
-        location.reload();
-    } else {
-        alert('Hiba történt.');
-    }
-}));
+            if (response.ok) {
+                alert('Sikeres törlés és email küldés!');
+                location.reload();
+            } else {
+                alert('Hiba történt.');
+            }
+        }));
 
+        // Árak frissítése
         document.querySelectorAll('.save-price').forEach(btn => btn.addEventListener('click', async (e) => {
             const container = (e.currentTarget as HTMLElement).closest('.grid');
             const data = {
@@ -311,9 +331,84 @@ const getSetting = (key) => siteSettings.find(s => s.key === key)?.value || "";
             location.reload();
         }));
 
+        // --- ÚJ / JAVÍTOTT RÉSZ: Galéria képfeltöltés kezelése ---
+        document.getElementById('gallery-upload-form')?.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const btn = document.getElementById('g-submit-btn') as HTMLButtonElement;
+            btn.disabled = true;
+            btn.innerText = "Feltöltés...";
+
+            const fileEl = document.getElementById('g-file') as HTMLInputElement;
+            const file = fileEl.files?.[0];
+            const title = (document.getElementById('g-title') as HTMLInputElement).value;
+            const category = (document.getElementById('g-category') as HTMLInputElement).value;
+
+            if (!file) {
+                btn.disabled = false;
+                btn.innerText = "Kép mentése";
+                return;
+            }
+
+            // Egyedi fájlnév generálás időbélyeggel
+            const fileName = `${Date.now()}-${file.name}`;
+
+            // 1. Storage feltöltés a 'gallery' bucketbe
+            const { data: storageData, error: storageError } = await supabase.storage
+                .from('gallery')
+                .upload(fileName, file, {
+                    cacheControl: '3600',
+                    upsert: false
+                });
+
+            if (storageError) {
+                console.error("Storage hiba:", storageError);
+                alert(`Feltöltési hiba: ${storageError.message}`);
+                btn.disabled = false;
+                btn.innerText = "Kép mentése";
+                return;
+            }
+
+            // 2. Publikus URL lekérése
+            const { data: { publicUrl } } = supabase.storage.from('gallery').getPublicUrl(fileName);
+
+            // 3. Mentés az adatbázis 'gallery' táblájába
+            const { error: dbError } = await supabase.from('gallery').insert([{
+                title,
+                category,
+                src: publicUrl,
+                storage_path: fileName
+            }]);
+
+            if (dbError) {
+                console.error("Adatbázis hiba:", dbError.message);
+                alert("Adatbázis mentési hiba történt!");
+                btn.disabled = false;
+                btn.innerText = "Kép mentése";
+                return;
+            }
+
+            alert("Kép sikeresen mentve!");
+            location.reload();
+        });
+
+        // Galéria elem törlése (Adatbázisból ÉS Storage-ból is)
         document.querySelectorAll('.del-gallery-item').forEach(btn => btn.addEventListener('click', async (e) => {
+            const target = e.currentTarget as HTMLElement;
+            const id = target.dataset.id;
+            const path = target.dataset.path;
+
             if (!confirm('Biztosan törlöd a képet?')) return;
-            await supabase.from('gallery').delete().eq('id', (e.currentTarget as HTMLElement).dataset.id);
+
+            // Ha van elmentett storage path, onnan is töröljük a fizikai fájlt
+            if (path) {
+                await supabase.storage.from('gallery').remove([path]);
+            }
+
+            // Törlés az adatbázis táblából
+            await supabase.from('gallery').delete().eq('id', id);
+            
+            alert("Kép törölve!");
             location.reload();
         }));
     });

@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+    <meta charset="UTF-8">
+    <title>GDPR Nyilatkozat</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Great+Vibes&family=Montserrat:wght@300;400;600&display=swap');
+
+        @page {
+            size: A4;
+            margin: 10mm;
+        }
+        
+        *, *::before, *::after {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Montserrat', sans-serif;
+            margin: 0;
+            padding: 10px;
+            color: #000000;
+            background-color: #ffffff;
+        }
+
+        .page-frame {
+            border: 1px solid #000000;
+            padding: 4px;
+            border-radius: 20px;
+        }
+
+        .page-frame-inner {
+            border: 2px solid #000000;
+            padding: 25px 20px;
+            border-radius: 16px;
+        }
+
+        .header-container {
+            text-align: center;
+            margin-bottom: 25px;
+            position: relative;
+        }
+
+        .logo-placeholder {
+            position: absolute;
+            top: 0;
+            right: 15px;
+            font-family: 'Great Vibes', cursive;
+            font-size: 42pt;
+            line-height: 1;
+            color: #000000;
+        }
+
+        .main-title {
+            font-family: 'Great Vibes', cursive;
+            font-size: 46pt;
+            margin: 0;
+            color: #000000;
+            font-weight: normal;
+        }
+
+        .subtitle {
+            font-size: 11pt;
+            font-weight: 600;
+            letter-spacing: 4px;
+            margin: 2px 0 10px 0;
+            text-transform: uppercase;
+        }
+
+        .intro-text {
+            font-size: 9.5pt;
+            color: #000000;
+            margin: 0 auto;
+            max-width: 90%;
+            line-height: 1.4;
+        }
+
+        .grid-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 15px;
+        }
+
+        .grid-cell {
+            width: 49%;
+            border: 2px solid #000000;
+            border-radius: 18px;
+            overflow: hidden;
+            background: #ffffff;
+        }
+
+        .section-header {
+            background-color: #f0f0f0;
+            border-bottom: 2px solid #000000;
+            padding: 8px 12px;
+            font-weight: 600;
+            font-size: 11pt;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            text-align: center;
+        }
+
+        .section-body {
+            padding: 15px;
+            font-size: 10pt;
+        }
+
+        .info-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .info-table td {
+            padding: 6px 0;
+            vertical-align: top;
+        }
+
+        .info-label {
+            font-weight: 400;
+            width: 32%;
+        }
+
+        .info-value {
+            width: 68%;
+        }
+
+        ul.doc-list {
+            margin: 0;
+            padding-left: 15px;
+            list-style-type: disc;
+        }
+
+        ul.doc-list li {
+            margin-bottom: 7px;
+            line-height: 1.3;
+        }
+
+        .full-width-box {
+            width: 100%;
+            border: 2px solid #000000;
+            border-radius: 18px;
+            overflow: hidden;
+            margin-bottom: 15px;
+        }
+
+        .retention-container {
+            display: flex;
+            width: 100%;
+        }
+
+        .retention-col {
+            flex: 1;
+            text-align: center;
+            padding: 12px;
+        }
+
+        .retention-col:not(:last-child) {
+            border-right: 1px solid #000000;
+        }
+
+        .retention-title {
+            font-size: 9pt;
+            font-weight: 600;
+            text-transform: uppercase;
+            margin-bottom: 8px;
+            letter-spacing: 0.5px;
+        }
+
+        .retention-val {
+            font-size: 10pt;
+        }
+
+        .rights-container {
+            font-size: 10pt;
+        }
+        .rights-intro {
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+        .rights-columns {
+            display: flex;
+            justify-content: space-between;
+        }
+        .rights-col {
+            width: 48%;
+        }
+        .right-item {
+            margin-bottom: 8px;
+            line-height: 1.3;
+            position: relative;
+            padding-left: 20px;
+        }
+        .right-item::before {
+            content: "✓";
+            position: absolute;
+            left: 0;
+            top: 0;
+            font-weight: bold;
+        }
+
+        .thanks-box {
+            width: 100%;
+            border: 2px solid #000000;
+            border-radius: 18px;
+            padding: 12px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .thanks-title {
+            font-weight: 600;
+            font-size: 11pt;
+            letter-spacing: 1px;
+            margin-bottom: 4px;
+        }
+        .thanks-sub {
+            font-size: 9.5pt;
+        }
+
+        .signature-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            padding: 10px 40px 0 40px;
+        }
+        .sig-line-block {
+            width: 35%;
+            text-align: center;
+        }
+        .sig-line {
+            border-bottom: 1px solid #000000;
+            margin-bottom: 5px;
+        }
+        .sig-label {
+            font-size: 9pt;
+        }
+        .heart-center {
+            font-size: 14pt;
+            margin-bottom: 2px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="page-frame">
+    <div class="page-frame-inner">
+
+        <!-- HEADER -->
+        <div class="header-container">
+            <div class="logo-placeholder">NΩ</div>
+            <div class="main-title">GDPR Nyilatkozat</div>
+            <div class="subtitle">Adatkezelési Tájékoztató</div>
+            <div class="intro-text">
+                Az Európai Parlament és a Tanács (EU) 2016/679 rendelete (GDPR) alapján<br>
+                az alábbi tájékoztatást adom a személyes adatok kezeléséről.
+            </div>
+        </div>
+
+        <!-- ROW 1 -->
+        <div class="grid-row">
+            <div class="grid-cell">
+                <div class="section-header">1. Adatkezelő</div>
+                <div class="section-body">
+                    <table class="info-table">
+                        <tr>
+                            <td class="info-label">Név:</td>
+                            <td class="info-value">Szekeres-Radványi Nelli egyéni vállalkozó</td>
+                        </tr>
+                        <tr>
+                            <td class="info-label">Székhely:</td>
+                            <td class="info-value">6728 Szeged, 34. utca 2.</td>
+                        </tr>
+                        <tr>
+                            <td class="info-label">E-mail:</td>
+                            <td class="info-value">nellirad@gmail.com</td>
+                        </tr>
+                        <tr>
+                            <td class="info-label">Telefonszám:</td>
+                            <td class="info-value">+36 30 732 8747</td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+            
+            <div class="grid-cell">
+                <div class="section-header">2. Az adatkezelés célja</div>
+                <div class="section-body">
+                    <ul class="doc-list">
+                        <li>időpontfoglalás és kapcsolattartás;</li>
+                        <li>a műkörömépítő szolgáltatás nyújtása;</li>
+                        <li>számlázási kötelezettség teljesítése;</li>
+                        <li>jogszabályi kötelezettségek teljesítése.</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- ROW 2 -->
+        <div class="grid-row">
+            <div class="grid-cell">
+                <div class="section-header">3. Kezelt személyes adatok</div>
+                <div class="section-body">
+                    <ul class="doc-list">
+                        <li>név;</li>
+                        <li>telefonszám;</li>
+                        <li>e-mail cím;</li>
+                        <li>lakcím;</li>
+                        <li>messenger elérhetőség;</li>
+                        <li>vendégkártyán szereplő adatok.</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="grid-cell">
+                <div class="section-header">4. Az adatkezelés jogalapja</div>
+                <div class="section-body">
+                    <ul class="doc-list">
+                        <li>szerződés teljesítése (GDPR 6. cikk (1) b));</li>
+                        <li>jogi kötelezettség teljesítése (GDPR 6. cikk (1) c));</li>
+                        <li>jogos érdek (időpont-egyeztetés, kapcsolattartás);</li>
+                        <li>hozzájárulás, amennyiben az adatkezelés ezt megköveteli (GDPR 6. cikk (1) a)).</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- 5. AZ ADATOK MEGŐRZÉSI IDEJE -->
+        <div class="full-width-box">
+            <div class="section-header">5. Az adatok megőrzési ideje</div>
+            <div class="retention-container">
+                <div class="retention-col">
+                    <div class="retention-title">Időpontfoglalási adatok</div>
+                    <div class="retention-val">legfeljebb 1 év</div>
+                </div>
+                <div class="retention-col">
+                    <div class="retention-title">Kapcsolattartási adatok</div>
+                    <div class="retention-val">a kapcsolat fennállásáig</div>
+                </div>
+                <div class="retention-col">
+                    <div class="retention-title">Számlázási adatok</div>
+                    <div class="retention-val">a hatályos számviteli jogszabályok szerint 8 év</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 6. ADATTOVÁBBÍTÁS -->
+        <div class="full-width-box">
+            <div class="section-header">6. Adattovábbítás</div>
+            <div class="section-body" style="text-align: justify; line-height: 1.4;">
+                Személyes adat kizárólag jogszabály alapján vagy a szolgáltatás teljesítéséhez szükséges mértékben kerül továbbításra (pl. könyvelő részére). Az adatokat harmadik fél részére hozzájárulás nélkül nem adom át.
+            </div>
+        </div>
+
+        <!-- 7. AZ ÉRINTETT JOGAI -->
+        <div class="full-width-box">
+            <div class="section-header">7. Az érintett jogai</div>
+            <div class="section-body rights-container">
+                <div class="rights-intro">Ön jogosult:</div>
+                <div class="rights-columns">
+                    <div class="rights-col">
+                        <div class="right-item">tájékoztatást kérni személyes adatai kezeléséről;</div>
+                        <div class="right-item">hozzáférni személyes adataihoz;</div>
+                        <div class="right-item">kérni azok helyesbítését;</div>
+                        <div class="right-item">kérni azok törlését, amennyiben annak nincs jogszabályi akadálya;</div>
+                    </div>
+                    <div class="rights-col">
+                        <div class="right-item">kérni az adatkezelés korlátozását;</div>
+                        <div class="right-item">tiltakozni az adatkezelés ellen;</div>
+                        <div class="right-item">panaszt benyújtani a Nemzeti Adatvédelmi és Információszabadság Hatósághoz (NAIH);</div>
+                        <div class="right-item">bírósához fordulni.</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 8. ADATBIZTONSÁG -->
+        <div class="full-width-box">
+            <div class="section-header">8. Adatbiztonság</div>
+            <div class="section-body" style="text-align: justify; line-height: 1.4;">
+                Az adatkezelő minden tőle elvárható technikai és szervezési intézkedést megtesz annak érdekében, hogy a kezelt személyes adatok biztonságban legyenek, és illetéktelen személy ne férhessen hozzájuk.
+            </div>
+        </div>
+
+        <!-- THANKS -->
+        <div class="thanks-box">
+            <div class="thanks-title">KÖSZÖNÖM BIZALMÁT!</div>
+            <div class="thanks-sub">Számomra fontos az adatok bizalmas kezelése és az Ön magánéletének védelme.</div>
+        </div>
+
+        <!-- SIGNATURES -->
+        <div class="signature-row">
+            <div class="sig-line-block">
+                <div class="sig-line"></div>
+                <div class="sig-label">aláírás</div>
+            </div>
+            <div class="heart-center"> can </div>
+            <div class="sig-line-block">
+                <div class="sig-line"></div>
+                <div class="sig-label">dátum</div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+</body>
+</html>
