@@ -1,24 +1,25 @@
-<section class="relative min-h-screen flex items-center pt-20 overflow-hidden bg-linear-to-br from-white via-pink-50 to-white">
-  <div class="absolute top-[-10%] right-[-10%] w-125 h-125 bg-pink-200/30 blur-[100px] rounded-full"></div>
+<section class="relative min-h-screen flex items-center pt-32 pb-16 overflow-hidden bg-linear-to-br from-white via-pink-50 to-white">
+  <!-- A háttér elmosódott kör méreteit fix értékekre cseréltük, hogy mindenhol működjön -->
+  <div class="absolute top-[-10%] right-[-10%] w-[400px] h-[400px] md:w-[600px] md:h-[600px] bg-pink-200/30 blur-[100px] rounded-full pointer-events-none"></div>
 
-  <div class="max-w-6xl mx-auto px-4 grid md:grid-cols-2 gap-12 items-center relative z-10">
-    <div class="text-center md:text-left">
-      <span class="inline-block px-4 py-1 rounded-full bg-pink-100 text-pink-600 text-s font-bold uppercase tracking-widest mb-6">
+  <div class="max-w-6xl mx-auto px-4 sm:px-6 grid md:grid-cols-2 gap-12 items-center relative z-10 w-full">
+    <div class="text-center md:text-left mt-4 md:mt-0">
+      
+      <!-- JAVÍTVA: A text-s helyett text-xs, hogy mobilon szépen kiférjen -->
+      <span class="inline-block px-4 py-1.5 rounded-full bg-pink-100 text-pink-600 text-xs md:text-sm font-bold uppercase tracking-widest mb-6">
         Precízen elkészített, tartós körmök
       </span>
       
-      <!-- SEO 1: A legfontosabb H1 címsor lokális kulcsszavakkal (Szeged, Műköröm, Gél Lakk) -->
-      <h1 class="text-6xl md:text-4xl font-serif text-slate-900 leading-tight mb-6">
-        Professzionális Műköröm és <span class="italic text-pink-500">Gél Lakk</span> <br /> Szegeden
+      <!-- JAVÍTVA: Mobilon text-4xl, nagyobb képernyőn (md és lg) növekszik a méret -->
+      <h1 class="text-4xl md:text-5xl lg:text-6xl font-serif text-slate-900 leading-tight mb-6">
+        Professzionális Műköröm és <span class="italic text-pink-500">Gél Lakk</span> <br class="hidden sm:block" /> Szegeden
       </h1>
       
-      <!-- SEO 2: Az eredeti kreatív szöveget áttettük ide, megtoldva egy kis helyi SEO-val (Baktó) -->
-      <p class="text-xl text-slate-600 mb-10 max-w-md mx-auto md:mx-0">
+      <p class="text-lg md:text-xl text-slate-600 mb-10 max-w-md mx-auto md:mx-0 px-2 md:px-0">
         Személyiségedhez illő, egyedi szettek, modern technikák és minőségi anyagok alkalmazásával Baktó szívében.
       </p>
       
       <div class="flex flex-col sm:flex-row gap-4 justify-center md:justify-start">
-        <!-- SEO 3: Egyértelmű aria-label a gombokhoz -->
         <a href="#kapcsolat" aria-label="Időpontfoglalás műköröm építésre vagy gél lakkra" class="px-8 py-4 bg-slate-900 text-white rounded-2xl font-bold shadow-xl hover:bg-pink-600 transition-all transform hover:-translate-y-1">
           Időpontfoglalás
         </a>
@@ -28,12 +29,12 @@
       </div>
     </div>
 
-    <div class="relative">
-      <div class="relative z-10 rounded-4xl overflow-hidden shadow-2xl rotate-2 hover:rotate-0 transition-transform duration-500">
-        <!-- SEO 4: Részletes, kulcsszavas alt text a nyitóképhez -->
-        <img src="index_cover.jpeg" alt="Gyönyörű műköröm és gél lakk minta - Nails by Nelly Szeged, Baktó" class="w-full h-125 object-cover" />
+    <!-- JAVÍTVA: A kép konténere kapott max-width korlátozást és fixált képarányt mobilon -->
+    <div class="relative w-full max-w-[320px] sm:max-w-md mx-auto md:max-w-none">
+      <div class="relative z-10 rounded-4xl overflow-hidden shadow-2xl rotate-2 hover:rotate-0 transition-transform duration-500 aspect-[4/5] md:aspect-auto md:h-[550px]">
+        <img src="index_cover.jpeg" alt="Gyönyörű műköröm és gél lakk minta - Nails by Nelly Szeged, Baktó" class="w-full h-full object-cover" />
       </div>
-      <div class="absolute inset-0 border-2 border-pink-200 translate-x-4 translate-y-4 rounded-4xl z-0"></div>
+      <div class="absolute inset-0 border-2 border-pink-200 translate-x-3 translate-y-3 md:translate-x-4 md:translate-y-4 rounded-4xl z-0 pointer-events-none"></div>
     </div>
   </div>
 </section>
