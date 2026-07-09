@@ -6,7 +6,19 @@ import Footer from '../components/Footer.astro';
 import Analytics from '@vercel/analytics/astro';
 import SpeedInsights from '@vercel/speed-insights/astro';
 
-const { title } = Astro.props;
+// Bővítjük az Astro.props-ot egy opcionális leírással a finomhangoláshoz
+interface Props {
+  title?: string;
+  description?: string;
+}
+
+const { 
+  title, 
+  description = "Professzionális műköröm építés, gél lakk, francia és egyedi díszítések Szegeden, Baktóban. Biztonságos és gyors online időpontfoglalás Nails by Nellynél!" 
+} = Astro.props;
+
+// Automatikus kanonikus URL generálása a duplikált tartalmak miatti Google büntetés elkerülésére
+const canonicalURL = new URL(Astro.url.pathname, Astro.site || "https://nailsbynelly.hu");
 ---
 
 <!doctype html>
@@ -15,16 +27,51 @@ const { title } = Astro.props;
 		<meta charset="UTF-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
         
+        <title>{title ? `${title} | Nails by Nelly Szeged` : "Nails by Nelly | Műköröm építés és Gél lakk Szeged"}</title>
+        <meta name="description" content={description} />
+        <link rel="canonical" href={canonicalURL} />
+        <meta name="robots" content="index, follow" />
+
         <link rel="icon" href="/favicon.ico" sizes="any" />
         <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
 
 		<meta name="generator" content={Astro.generator} />
-		<title>{title || "Szekeres-Radványi Nelly Nails"}</title>
 		
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content={canonicalURL} />
+        <meta property="og:title" content={title ? `${title} | Nails by Nelly` : "Nails by Nelly Szeged"} />
+        <meta property="og:description" content={description} />
+        <meta property="og:image" content={new URL('/og-image.jpg', canonicalURL)} />
+        <meta property="og:locale" content="hu_HU" />
+
         <link rel="preconnect" href="https://fonts.googleapis.com">
 		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 		<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Plus+Jakarta+Sans:wght@200..800&display=swap" rel="stylesheet">
+
+        <script type="application/ld+json" is:inline>
+          {
+            "@context": "https://schema.org",
+            "@type": "BeautySalon",
+            "name": "Nails by Nelly",
+            "url": "https://nailsbynelly.hu",
+            "image": "https://nailsbynelly.hu/og-image.jpg",
+            "telephone": "+36307328747",
+            "priceRange": "$$",
+            "address": {
+              "@type": "PostalAddress",
+              "streetAddress": "Baktói kiskertek",
+              "addressLocality": "Szeged",
+              "postalCode": "6728",
+              "addressCountry": "HU"
+            },
+            "geo": {
+              "@type": "GeoCoordinates",
+              "latitude": 46.2825,
+              "longitude": 20.1833
+            }
+          }
+        </script>
 	</head>
 	<body class="bg-white min-h-screen flex flex-col antialiased text-slate-900">
 		
@@ -44,7 +91,6 @@ const { title } = Astro.props;
 		margin: 0;
 		padding: 0;
 		width: 100%;
-		/* Megakadályozza a vízszintes görgetést, ha egy elem túl széles lenne */
 		overflow-x: hidden;
 	}
 	body {
