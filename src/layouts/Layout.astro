@@ -27,10 +27,14 @@ const canonicalURL = new URL(Astro.url.pathname, Astro.site || "https://nailsbyn
 		<meta charset="UTF-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
         
-        <title>{title ? `${title} | Nails by Nelly Szeged` : "Nails by Nelly | Műköröm építés és Gél lakk Szeged"}</title>
+        <!-- SEO 1: Letisztult, duplikációmentes címsor generálás -->
+        <title>{title ? `${title} | Nails by Nelly` : "Nails by Nelly | Műköröm építés és Gél lakk Szeged"}</title>
         <meta name="description" content={description} />
         <link rel="canonical" href={canonicalURL} />
         <meta name="robots" content="index, follow" />
+
+        <!-- SEO 2: Mobil böngésző címsorának színezése a márka rózsaszínjére -->
+        <meta name="theme-color" content="#ec4899" />
 
         <link rel="icon" href="/favicon.ico" sizes="any" />
         <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
@@ -87,13 +91,7 @@ const canonicalURL = new URL(Astro.url.pathname, Astro.site || "https://nailsbyn
 </html>
 
 <style is:global>
-	html {
-		margin: 0;
-		padding: 0;
-		width: 100%;
-		overflow-x: hidden;
-	}
-	body {
+	html, body {
 		margin: 0;
 		padding: 0;
 		width: 100%;

@@ -10,11 +10,17 @@ const { data: categories } = await supabase
 const displayCategories = categories || [];
 ---
 
-<section id="arak" class="py-24 px-4 bg-pink-50/30">
+<section id="arak" aria-label="Árak és szolgáltatások" class="py-24 px-4 bg-pink-50/30">
   <div class="max-w-4xl mx-auto">
     <div class="text-center mb-16">
-      <h2 class="text-4xl font-serif font-bold text-slate-900 mb-4 tracking-tight">Szolgáltatások & Árak</h2>
-      <div class="w-20 h-1 bg-pink-500 mx-auto rounded-full"></div>
+      <!-- SEO 1: Lokális kulcsszavakkal optimalizált H2 címsor -->
+      <h2 class="text-4xl font-serif font-bold text-slate-900 mb-4 tracking-tight">Műköröm és Gél Lakk Árak Szeged</h2>
+      <div class="w-20 h-1 bg-pink-500 mx-auto rounded-full mb-6"></div>
+      
+      <!-- SEO 2: Keresőrobotoknak és felhasználóknak szóló bevezető -->
+      <p class="text-slate-600 max-w-2xl mx-auto text-lg">
+        Részletes árlista professzionális műköröm építés, töltés, gél lakk és manikűr szolgáltatásokról a szegedi (baktói) szalonomban.
+      </p>
     </div>
 
     <div class="space-y-12">
@@ -38,7 +44,7 @@ const displayCategories = categories || [];
                 </div>
                 <div class="text-right">
                   <span class="text-xl font-bold text-slate-900">{item.price_value}</span>
-                  <span class="text-[10px] font-bold text-pink-400 block uppercase tracking-tighter">HUF</span>
+                  <span class="text-[10px] font-bold text-pink-400 block uppercase tracking-tighter" aria-hidden="true">HUF</span>
                 </div>
               </div>
             ))}

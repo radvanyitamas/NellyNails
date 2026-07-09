@@ -16,12 +16,14 @@ const categories = ["Összes", ...rawCategories];
 <section id="munkak" class="py-24 px-4 bg-white relative">
   <div class="max-w-6xl mx-auto">
     <div class="text-center mb-16">
-      <h2 class="text-5xl font-serif font-bold text-slate-900 mb-6 tracking-tight">Referenciák</h2>
+      <!-- SEO 1: H2 címsor helyi és tematikus kulcsszóval bővítve -->
+      <h2 class="text-5xl font-serif font-bold text-slate-900 mb-6 tracking-tight">Műköröm és Gél Lakk Referenciák</h2>
       
       <div class="flex flex-wrap justify-center gap-3 mt-8">
         {categories.map((cat) => (
           <button 
             data-filter={cat}
+            aria-label={`${cat} kategória szűrése`}
             class:list={[
               "filter-btn px-6 py-2 rounded-full border text-sm font-semibold transition-all duration-300 active:scale-95",
               cat === "Összes" 
@@ -43,9 +45,10 @@ const categories = ["Összes", ...rawCategories];
           data-src={work.src}
           data-title={work.title}
         >
+          <!-- SEO 2: Dinamikus és kulcsszavazott alt text a képeknek -->
           <img 
             src={work.src} 
-            alt={work.title} 
+            alt={`${work.title} - ${work.category} | Nails by Nelly Szeged`} 
             class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
             loading="lazy"
           />
@@ -59,15 +62,16 @@ const categories = ["Összes", ...rawCategories];
   </div>
 
   <div id="lightbox" class="fixed inset-0 z-100 flex items-center justify-center bg-slate-950/95 backdrop-blur-xl opacity-0 pointer-events-none transition-opacity duration-500">
-    <button id="close-lightbox" class="absolute top-8 right-8 text-white/50 hover:text-white transition-colors z-110">
-      <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M6 18L18 6M6 6l12 12"/></svg>
+    <!-- SEO 3: aria-label hozzáadása a csak ikont tartalmazó gombokhoz -->
+    <button id="close-lightbox" aria-label="Galéria bezárása" class="absolute top-8 right-8 text-white/50 hover:text-white transition-colors z-110">
+      <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M6 18L18 6M6 6l12 12"/></svg>
     </button>
 
-    <button id="prev-btn" class="absolute left-4 md:left-8 text-white/30 hover:text-white transition-all p-4 z-110">
-      <svg class="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M15 19l-7-7 7-7"/></svg>
+    <button id="prev-btn" aria-label="Előző kép mutatása" class="absolute left-4 md:left-8 text-white/30 hover:text-white transition-all p-4 z-110">
+      <svg class="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M15 19l-7-7 7-7"/></svg>
     </button>
-    <button id="next-btn" class="absolute right-4 md:right-8 text-white/30 hover:text-white transition-all p-4 z-110">
-      <svg class="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M9 5l7 7-7 7"/></svg>
+    <button id="next-btn" aria-label="Következő kép mutatása" class="absolute right-4 md:right-8 text-white/30 hover:text-white transition-all p-4 z-110">
+      <svg class="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M9 5l7 7-7 7"/></svg>
     </button>
 
     <div class="max-w-[90vw] max-h-[85vh] relative flex flex-col items-center">
@@ -134,6 +138,9 @@ const categories = ["Összes", ...rawCategories];
       const cat = item.getAttribute('data-category') || '';
 
       lightboxImg.src = src;
+      // SEO 4: A lightbox kép is megkapja a dinamikus alt szöveget kattintáskor
+      lightboxImg.alt = `${title} - ${cat} | Nails by Nelly Szeged`;
+      
       lightboxTitle.textContent = title;
       lightboxCat.textContent = cat;
       currentIndex = index;
@@ -151,7 +158,10 @@ const categories = ["Összes", ...rawCategories];
 
     const closeLightbox = () => {
       lightbox.classList.add('opacity-0', 'pointer-events-none');
-      setTimeout(() => { lightboxImg.src = ""; }, 300);
+      setTimeout(() => { 
+        lightboxImg.src = ""; 
+        lightboxImg.alt = ""; // Biztonsági okokból töröljük bezáráskor
+      }, 300);
     };
     
     closeBtn?.addEventListener('click', closeLightbox);
