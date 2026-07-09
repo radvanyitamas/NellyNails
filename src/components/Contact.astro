@@ -7,23 +7,24 @@ import { supabase } from '../lib/supabase';
 // ==========================================
 const { data: settingsData } = await supabase.from('site_settings').select('*');
 const { data: openingHours } = await supabase.from('opening_hours').select('*').order('day_id');
-// ÚJ: Lekérjük a rendkívüli lezárt napokat is a szerver oldalon, hogy átadhassuk a naptárnak
-const { data: closedDatesData } = await supabase.from('closed_dates').select('closed_date');
 
+// Lekérjük a rendkívüli lezárt napokat is a dátummal és a hozzájuk tartozó indokkal (reason) együtt
+const { data: closedDatesData } = await supabase.from('closed_dates').select('closed_date, reason');
+
+// Kinyerjük a kapcsolati adatokat
 const email = settingsData?.find(s => s.key === 'contact_email')?.value || "nellirad@gmail.com";
 const phone = settingsData?.find(s => s.key === 'contact_phone')?.value || "+36 30 732 8747";
 const address = settingsData?.find(s => s.key === 'contact_address')?.value || "6728 Szeged, Példa utca 1.";
 
 const hoursMap = openingHours || [];
-// ÚJ: Kiszedjük a tiszta dátum stringeket egy tömbbe (pl: ["2026-07-10", "2026-07-15"])
-const extraClosedDates = closedDatesData?.map(d => d.closed_date) || [];
+const extraClosedDates = closedDatesData || [];
 ---
 
 <section id="kapcsolat" class="py-24 px-4 bg-white relative">
   <div class="max-w-6xl mx-auto">
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-16">
       
-      <!-- Bal oldal: Kapcsolati kártyák és fix nyitvatartás -->
+      <!-- BAL OLDAL: Kapcsolati kártyák és fix nyitvatartási táblázat -->
       <div class="space-y-12">
         <div>
           <h2 class="text-4xl font-serif font-bold text-slate-900 mb-6 tracking-tight">Kapcsolat</h2>
@@ -32,6 +33,7 @@ const extraClosedDates = closedDatesData?.map(d => d.closed_date) || [];
           </p>
           
           <div class="space-y-8">
+            <!-- Telefon -->
             <div class="flex items-center space-x-5 group">
               <div class="w-14 h-14 bg-pink-100 rounded-2xl flex items-center justify-center text-pink-600 group-hover:bg-pink-600 group-hover:text-white transition-all duration-300 shadow-sm">
                 <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/></svg>
@@ -42,6 +44,7 @@ const extraClosedDates = closedDatesData?.map(d => d.closed_date) || [];
               </div>
             </div>
 
+            <!-- E-mail -->
             <div class="flex items-center space-x-5 group">
               <div class="w-14 h-14 bg-pink-100 rounded-2xl flex items-center justify-center text-pink-600 group-hover:bg-pink-600 group-hover:text-white transition-all duration-300 shadow-sm">
                 <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
@@ -52,6 +55,7 @@ const extraClosedDates = closedDatesData?.map(d => d.closed_date) || [];
               </div>
             </div>
 
+            <!-- Helyszín -->
             <div class="flex items-center space-x-5 group">
                <div class="w-14 h-14 bg-pink-100 rounded-2xl flex items-center justify-center text-pink-600 group-hover:bg-pink-600 group-hover:text-white transition-all duration-300 shadow-sm">
                 <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
@@ -64,6 +68,7 @@ const extraClosedDates = closedDatesData?.map(d => d.closed_date) || [];
           </div>
         </div>
 
+        <!-- Heti fix nyitvatartás doboz -->
         <div class="bg-slate-50 p-8 rounded-[2.5rem] border border-slate-100 shadow-sm">
           <h3 class="text-xl font-bold mb-6 text-slate-800 flex items-center">
             <span class="w-2 h-2 bg-pink-500 rounded-full mr-3"></span> Nyitvatartás
@@ -81,9 +86,9 @@ const extraClosedDates = closedDatesData?.map(d => d.closed_date) || [];
         </div>
       </div>
 
-      <!-- Jobb oldal: Időpontfoglaló űrlap naptárral -->
-      <!-- ÚJ: data-closed attribútumban átadjuk a rendkívüli zárvatartásokat a JS-nek -->
+      <!-- JOBB OLDAL: Időpontfoglaló űrlap és interaktív naptár -->
       <div class="bg-slate-50 p-8 md:p-12 rounded-[2.5rem] border border-pink-100 shadow-xl relative overflow-hidden">
+        
         <form id="booking-form" class="space-y-6" data-hours={JSON.stringify(hoursMap)} data-closed={JSON.stringify(extraClosedDates)}>
           
           <div class="space-y-4">
@@ -94,6 +99,7 @@ const extraClosedDates = closedDatesData?.map(d => d.closed_date) || [];
             </div>
           </div>
 
+          <!-- Naptár konténer -->
           <div class="space-y-4">
             <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">1. Nap kiválasztása</label>
             <div id="calendar-container" class="rounded-3xl overflow-hidden shadow-inner ring-1 ring-slate-200 bg-white p-2 min-h-75">
@@ -101,9 +107,12 @@ const extraClosedDates = closedDatesData?.map(d => d.closed_date) || [];
             </div>
           </div>
 
+          <!-- Szabad órák (gombok) területe -->
           <div id="time-selection" class="space-y-4 hidden">
             <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">2. Szabad időpontok</label>
+            
             <div id="time-slots" class="grid grid-cols-4 gap-2"></div>
+            
             <input type="hidden" name="date" id="final-date-input" required />
           </div>
           
@@ -118,11 +127,11 @@ const extraClosedDates = closedDatesData?.map(d => d.closed_date) || [];
   </div>
 </section>
 
+<!-- Flatpickr naptár külső függőségei -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
 <script is:inline src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 
 <script>
-  // Magyar nyelvi beállítások a naptárhoz
   const hu = {
     weekdays: { shorthand: ["V", "H", "K", "Sz", "Cs", "P", "Sz"], longhand: ["Vasárnap", "Hétfő", "Kedd", "Szerda", "Csütörtök", "Péntek", "Szombat"] },
     months: { shorthand: ["Jan", "Feb", "Már", "Ápr", "Máj", "Jún", "Júl", "Aug", "Szep", "Okt", "Nov", "Dec"], longhand: ["Január", "Február", "Március", "Április", "Május", "Június", "Július", "Augusztus", "Szeptember", "Október", "November", "December"] },
@@ -135,10 +144,9 @@ const extraClosedDates = closedDatesData?.map(d => d.closed_date) || [];
   const finalInput = document.getElementById('final-date-input') as HTMLInputElement | null;
   const submitBtn = document.getElementById('submit-btn') as HTMLButtonElement | null;
 
-  // Kiolvassuk a HTML-be rejtett nyitvatartási és lezárt dátum adatokat
   const hoursArray = JSON.parse(form?.dataset.hours || '[]');
-  const closedDatesArray = JSON.parse(form?.dataset.closed || '[]'); // ÚJ: Rendkívüli zárva tartó napok tömbje
-  
+  const closedDatesArray = JSON.parse(form?.dataset.closed || '[]'); 
+
   let bookedTimestamps: number[] = [];
 
   // Foglalt időpontok lekérése a szerverről
@@ -150,20 +158,29 @@ const extraClosedDates = closedDatesData?.map(d => d.closed_date) || [];
         bookedTimestamps = data.map((d: string) => new Date(d).getTime());
       }
     } catch (e) { 
-        console.error("Nem sikerült lekérni a foglalt időpontokat:", e); 
+        console.error("Hiba a foglalt időpontok lekérésekor:", e); 
     }
   }
 
-  // Szabad időpont gombok generálása
+  // Szabad időpont (Óra/Perc) gombok generálása és kattintások kezelése
   function generateSlots(day: Date) {
     if (!slotsDiv || !selectionArea) return;
     
     slotsDiv.innerHTML = '';
     
-    // ÚJ BIZTONSÁGI ELLENŐRZÉS: Ha a kiválasztott nap ISO formátuma benne van a rendkívüli zárva tartó napokban
-    const selectedISODate = day.toISOString().split('T')[0];
-    if (closedDatesArray.includes(selectedISODate)) {
-        slotsDiv.innerHTML = '<p class="col-span-4 text-center text-red-400 py-4 italic text-sm">Ezen a napon szabadság / rendkívüli zárvatartás van.</p>';
+    // JAVÍTÁS: Időzóna-független, pontos helyi dátum kinyerése (megakadályozza a napok elcsúszását)
+    const year = day.getFullYear();
+    const month = String(day.getMonth() + 1).padStart(2, '0');
+    const date = String(day.getDate()).padStart(2, '0');
+    const selectedISODate = `${year}-${month}-${date}`;
+    
+    // Megkeressük, van-e rendkívüli zárvatartás erre a konkrét napra
+    const customClosedInfo = closedDatesArray.find((d: any) => d.closed_date === selectedISODate);
+    
+    // BÁRMILYEN ESZKÖZÖN (Mobil/PC) is kattintanak rá, kiírjuk az okot!
+    if (customClosedInfo) {
+        const reasonText = customClosedInfo.reason ? `: ${customClosedInfo.reason}` : '';
+        slotsDiv.innerHTML = `<p class="col-span-4 text-center text-red-500 py-6 bg-red-50 rounded-2xl border border-red-100 italic text-sm font-semibold shadow-inner">Ezen a napon zárva tartok${reasonText}.</p>`;
         selectionArea.classList.remove('hidden');
         return;
     }
@@ -175,7 +192,7 @@ const extraClosedDates = closedDatesData?.map(d => d.closed_date) || [];
     const dayConfig = dbConfig || { is_closed: false, open_time: '08:00:00', close_time: '17:00:00' };
 
     if (dayConfig.is_closed) {
-        slotsDiv.innerHTML = '<p class="col-span-4 text-center text-slate-400 py-4 italic text-sm">Ezen a napon zárva tartok.</p>';
+        slotsDiv.innerHTML = '<p class="col-span-4 text-center text-slate-400 py-6 bg-slate-50 rounded-2xl italic text-sm">Ezen a napon zárva tartok.</p>';
         selectionArea.classList.remove('hidden');
         return;
     }
@@ -185,6 +202,7 @@ const extraClosedDates = closedDatesData?.map(d => d.closed_date) || [];
 
     const startHour = parseInt(dayConfig.open_time.split(':')[0], 10);
     const endHour = parseInt(dayConfig.close_time.split(':')[0], 10);
+    
     const threeHoursInMs = 3 * 60 * 60 * 1000;
     let hasAvailableSlot = false;
 
@@ -227,12 +245,13 @@ const extraClosedDates = closedDatesData?.map(d => d.closed_date) || [];
             }
           };
         }
+        
         slotsDiv.appendChild(btn);
       }
     }
 
     if (!hasAvailableSlot) {
-        slotsDiv.innerHTML = '<p class="col-span-4 text-center text-slate-400 py-4 italic text-sm">Erre a napra már minden időpont betelt.</p>';
+        slotsDiv.innerHTML = '<p class="col-span-4 text-center text-slate-400 py-6 bg-slate-50 rounded-2xl italic text-sm">Erre a napra már minden időpont betelt.</p>';
     }
   }
 
@@ -242,9 +261,8 @@ const extraClosedDates = closedDatesData?.map(d => d.closed_date) || [];
     
     const today = new Date();
     const minAllowedDate = new Date(today);
-    minAllowedDate.setDate(today.getDate() + 2); // Ma + 2 nap a tiltás érvényesítésére
+    minAllowedDate.setDate(today.getDate() + 2); // Ma és holnap letiltva
 
-    // Inicializáljuk a Flatpickr naptárat
     // @ts-ignore
     flatpickr("#inline-calendar", {
       inline: true,
@@ -252,13 +270,26 @@ const extraClosedDates = closedDatesData?.map(d => d.closed_date) || [];
       locale: hu,
       minDate: minAllowedDate,
       dateFormat: "Y-m-d",
-      // ÚJ: A disable funkcióval teljesen kiszürkítjük és kattinthatatlanná tesszük az adminban beállított egyedi zárva tartó napokat
-      disable: closedDatesArray.map((dateStr: string) => {
-        // Átalakítjuk a naptár számára értelmezhető formátumra (éjfélre állítva az időt a tökéletes egyezésért)
-        const d = new Date(dateStr);
-        d.setHours(0,0,0,0);
-        return d;
-      }),
+      
+      // JAVÍTÁS: Levettük a natív 'disable' tulajdonságot. Helyette a napokat kattinthatóan hagyjuk,
+      // hogy a vendég rákattinthasson, és megjelenjen neki a magyarázó szöveg alul.
+      // Ehelyett a megjelenést manipuláljuk az onDayCreate-ben!
+      
+      onDayCreate: (dObj, dStr, fp, dayElem) => {
+        // Helyi időzónás, pontos dátum kinyerése a napok formázásához
+        const localYear = dayElem.dateObj.getFullYear();
+        const localMonth = String(dayElem.dateObj.getMonth() + 1).padStart(2, '0');
+        const localDay = String(dayElem.dateObj.getDate()).padStart(2, '0');
+        const dateISO = `${localYear}-${localMonth}-${localDay}`;
+
+        const match = closedDatesArray.find((d: any) => d.closed_date === dateISO);
+        
+        if (match) {
+          // Ha ez a nap zárva van, adunk neki egy egyedi CSS classt (Lásd: style rész a fájl alján)
+          // Így úgy néz ki, mintha inaktív lenne, de közben RÁ LEHET KATTINTANI!
+          dayElem.classList.add('custom-closed-day');
+        }
+      },
       onChange: (selectedDates: Date[]) => {
         if (selectedDates.length > 0) generateSlots(selectedDates[0]);
       }
@@ -267,13 +298,19 @@ const extraClosedDates = closedDatesData?.map(d => d.closed_date) || [];
 
   start();
 
-  // Form elküldés kezelése
+  // FORM BEKÜLDÉSE (FOGLALÁS)
   if (form && submitBtn) {
     form.onsubmit = async (e) => {
       e.preventDefault();
       
       const statusCont = document.getElementById('status-container');
       const btnSpan = submitBtn.querySelector('span');
+
+      // Véglegesítés ellenőrzése
+      if (!finalInput?.value) {
+          alert("Kérlek, válassz ki egy szabad időpontot a naptárban!");
+          return;
+      }
 
       submitBtn.disabled = true;
       if (btnSpan) btnSpan.textContent = 'Feldolgozás...';
@@ -313,8 +350,26 @@ const extraClosedDates = closedDatesData?.map(d => d.closed_date) || [];
 </script>
 
 <style>
+  /* A naptár dizájnjának finomhangolása */
   :global(.flatpickr-calendar) { box-shadow: none !important; border: none !important; width: 100% !important; background: transparent !important; }
-  :global(.flatpickr-day.selected) { background: #db2777 !important; border-color: #db2777 !important; border-radius: 12px !important; }
-  /* ÚJ STÍLUS: A letiltott/szabadságos napok vizuálisan is legyenek áthúzva és halványabbak */
-  :global(.flatpickr-day.flatpickr-disabled) { color: #cbd5e1 !important; text-decoration: line-through !important; cursor: not-allowed !important; }
+  
+  /* A kiválasztott (kattintott) nap stílusa */
+  :global(.flatpickr-day.selected) { background: #db2777 !important; border-color: #db2777 !important; border-radius: 12px !important; color: white !important;}
+  
+  /* MOBILBARÁT MEGOLDÁS: A lezárt napok áthúzottnak, pirosasnak és halványnak látszanak, 
+     de nincsenek letiltva, így ha az ügyfél rányom, meglátja a piros figyelmeztetést! */
+  :global(.custom-closed-day) { 
+      color: #ef4444 !important; /* Piros szöveg */
+      text-decoration: line-through !important; /* Áthúzott */
+      background-color: #fef2f2 !important; /* Halvány piros háttér */
+      border-radius: 12px !important;
+  }
+  
+  /* Ha a vendég mégis rákattint egy lezárt napra (aktívvá teszi), akkor feltűnőbb piros lesz */
+  :global(.custom-closed-day.selected) {
+      background-color: #ef4444 !important; 
+      color: white !important;
+      border-color: #ef4444 !important;
+      text-decoration: line-through !important;
+  }
 </style>
