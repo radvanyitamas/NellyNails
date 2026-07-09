@@ -1,36 +1,44 @@
 ---
+// --- BACKEND / SZERVER OLDALI KÓD (Astro Frontmatter) ---
 import Layout from '../layouts/Layout.astro';
 import { supabase } from '../lib/supabase';
 
+// 1. LÉPÉS: Kinyerjük a lemondási tokent az URL-ből (pl. /kezeles?token=valami)
 const token = Astro.url.searchParams.get('token');
 
+// 2. LÉPÉS: Lekérjük a konkrét foglalást a Supabase-ből a lemondási token alapján
 const { data: booking } = await supabase
   .from('bookings')
   .select('*')
   .eq('cancel_token', token)
-  .single();
+  .single(); // Csak egyetlen sort várunk eredményül
 
+// 3. LÉPÉS: Ha van ilyen foglalás, formázzuk a dátumot és az időt magyar formátumra
 const formattedDate = booking ? new Date(booking.booking_date).toLocaleString('hu-HU', { month: 'long', day: 'numeric' }) : '';
 const formattedTime = booking ? new Date(booking.booking_date).toLocaleString('hu-HU', { hour: '2-digit', minute: '2-digit' }) : '';
 ---
 
 <Layout title="Időpont lemondása">
     <div class="min-h-screen flex flex-col font-sans bg-[#fdf2f8]">
-        <!-- Navigáció mobilbarátabbá tétele -->
+        
+        <!-- Navigációs sáv a stílusos logóval -->
         <nav class="bg-white/90 backdrop-blur-md sticky top-0 z-50 border-b border-pink-100 px-6 py-4">
             <div class="max-w-7xl mx-auto flex justify-center md:justify-start">
                 <a href="/" class="text-2xl md:text-3xl font-serif font-bold text-slate-900 no-underline">Nails<span class="text-pink-600">by</span>Nelly</a>
             </div>
         </nav>
 
+        <!-- Középre zárt fő tartalom -->
         <div class="flex-1 flex items-center justify-center p-4 md:p-6">
-            <!-- A fix p-16-ot lecseréltem p-6 md:p-12-re, a kerekítést szintén igazítottam -->
             <div class="max-w-xl w-full bg-white rounded-[2rem] md:rounded-[4rem] p-6 md:p-16 shadow-2xl shadow-pink-200/30 border border-pink-50 text-center relative overflow-hidden">
                 
+                <!-- HA LÉTEZIK A FOGLALÁS: Megjelenítjük a lemondó kártyát -->
                 {booking ? (
                     <div id="booking-area">
+                        <!-- Rejtett mezőben tároljuk a tokent, hogy a kliens oldali script is elérhesse -->
                         <input type="hidden" id="token-data" value={token} />
                         
+                        <!-- Piros X ikon -->
                         <div class="w-20 h-20 md:w-24 md:h-24 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-6 md:mb-10 text-red-500 shadow-inner">
                             <svg class="w-10 h-10 md:w-12 md:h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                         </div>
@@ -38,22 +46,27 @@ const formattedTime = booking ? new Date(booking.booking_date).toLocaleString('h
                         <h1 class="text-3xl md:text-5xl font-serif font-bold text-slate-900 mb-4 tracking-tight">Lemondás</h1>
                         <p class="text-slate-500 mb-8 md:mb-12 italic font-medium">Sajnáljuk, ha közbejött valami. Biztosan lemondod?</p>
                         
+                        <!-- Időpont és helyszín részletező doboz -->
                         <div class="bg-slate-50 p-6 md:p-12 rounded-[2rem] md:rounded-[3rem] border border-slate-100 mb-8 md:mb-12 shadow-inner">
                             <p class="text-[10px] font-bold text-slate-400 uppercase tracking-[0.3em] mb-4">Lefoglalt időpont</p>
                             <p class="text-slate-700 font-bold text-base md:text-lg mb-2">6721 Szeged, Hullám utca 3.</p>
+                            <!-- Ide kerül a fent formázott magyar dátum és idő -->
                             <p class="text-3xl md:text-4xl font-bold text-[#db2777] tracking-tight mb-2">{formattedDate} {formattedTime}</p>
                             <p class="text-slate-400 font-bold">+36 30 732 8747</p>
                         </div>
                         
+                        <!-- Interaktív gombok -->
                         <div class="space-y-4">
                             <button id="cancel-btn" class="w-full py-4 md:py-6 bg-[#db2777] text-white font-bold rounded-[2rem] hover:bg-pink-700 transition-all shadow-xl shadow-pink-200 active:scale-95">Időpont lemondása</button>
                             <a href="/" class="block py-4 text-slate-400 font-bold hover:text-slate-600 transition-all">Mégsem, megtartom az időpontot</a>
                         </div>
                     </div>
                 ) : (
+                    <!-- HA NEM LÉTEZIK A FOGLALÁS: Hibajelzés (pl. ha már egyszer lemondták vagy hibás a link) -->
                     <div class="py-12 md:py-20 text-center"><p class="text-slate-400 italic text-xl">A foglalás nem található.</p></div>
                 )}
 
+                <!-- SIKERES LEMONDÁS DOBOZ: Alapértelmezetten rejtett (`hidden`), a JS fogja megmutatni -->
                 <div id="success-area" class="hidden py-10">
                     <div class="w-24 h-24 bg-green-50 rounded-full flex items-center justify-center mx-auto mb-10 text-green-500 shadow-inner text-4xl">✓</div>
                     <h2 class="text-3xl md:text-5xl font-serif font-bold text-slate-900 mb-6 tracking-tight">Lemondva 🎀</h2>
@@ -65,16 +78,21 @@ const formattedTime = booking ? new Date(booking.booking_date).toLocaleString('h
 </Layout>
 
 <script>
+    // --- KLIENS OLDALI JAVASCRIPT ---
     const btn = document.getElementById('cancel-btn');
     const token = (document.getElementById('token-data') as HTMLInputElement)?.value;
     
+    // Csak akkor futtatjuk az eseménykezelőt, ha a gomb és a token is létezik
     if (btn && token) {
         btn.addEventListener('click', async () => {
+            // Biztonsági megerősítő ablak a böngészőben
             if (!confirm('Biztosan lemondod?')) return;
             
+            // Gomb letiltása és vizuális visszajelzés, hogy a vendég ne kattinthasson duplán
             btn.innerText = 'Feldolgozás...';
             (btn as HTMLButtonElement).disabled = true;
             
+            // Meghívjuk a backend lemondó API-t, és elküldjük neki a tokent JSON formátumban
             const res = await fetch('/api/cancel', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -82,9 +100,11 @@ const formattedTime = booking ? new Date(booking.booking_date).toLocaleString('h
             });
             
             if (res.ok) {
+                // Sikeres lemondás esetén elrejtjük az adatokat, és mutatjuk a sikeres lemondás felületet
                 document.getElementById('booking-area')?.classList.add('hidden');
                 document.getElementById('success-area')?.classList.remove('hidden');
             } else {
+                // Hiba esetén visszaállítjuk a gombot aktív állapotba
                 alert('Hiba történt.');
                 btn.innerText = 'Időpont lemondása';
                 (btn as HTMLButtonElement).disabled = false;

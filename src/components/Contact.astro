@@ -5,23 +5,25 @@ import { supabase } from '../lib/supabase';
 // ==========================================
 // 1. ADATBÁZIS LEKÉRDEZÉSEK (Szerver oldal)
 // ==========================================
-// Lekérjük a weboldal beállításait és a nyitvatartási időket a Supabase-ből
 const { data: settingsData } = await supabase.from('site_settings').select('*');
 const { data: openingHours } = await supabase.from('opening_hours').select('*').order('day_id');
+// ÚJ: Lekérjük a rendkívüli lezárt napokat is a szerver oldalon, hogy átadhassuk a naptárnak
+const { data: closedDatesData } = await supabase.from('closed_dates').select('closed_date');
 
-// Kinyerjük a kapcsolati adatokat. Ha valamiért nincs adat az adatbázisban, alapértelmezett (fallback) adatokat használunk.
 const email = settingsData?.find(s => s.key === 'contact_email')?.value || "nellirad@gmail.com";
 const phone = settingsData?.find(s => s.key === 'contact_phone')?.value || "+36 30 732 8747";
 const address = settingsData?.find(s => s.key === 'contact_address')?.value || "6728 Szeged, Példa utca 1.";
 
-// A nyitvatartást átadjuk egy változónak. Ha üres lenne az adatbázis tábla, egy üres tömböt ad vissza.
 const hoursMap = openingHours || [];
+// ÚJ: Kiszedjük a tiszta dátum stringeket egy tömbbe (pl: ["2026-07-10", "2026-07-15"])
+const extraClosedDates = closedDatesData?.map(d => d.closed_date) || [];
 ---
 
 <section id="kapcsolat" class="py-24 px-4 bg-white relative">
   <div class="max-w-6xl mx-auto">
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-16">
       
+      <!-- Bal oldal: Kapcsolati kártyák és fix nyitvatartás -->
       <div class="space-y-12">
         <div>
           <h2 class="text-4xl font-serif font-bold text-slate-900 mb-6 tracking-tight">Kapcsolat</h2>
@@ -79,9 +81,10 @@ const hoursMap = openingHours || [];
         </div>
       </div>
 
+      <!-- Jobb oldal: Időpontfoglaló űrlap naptárral -->
+      <!-- ÚJ: data-closed attribútumban átadjuk a rendkívüli zárvatartásokat a JS-nek -->
       <div class="bg-slate-50 p-8 md:p-12 rounded-[2.5rem] border border-pink-100 shadow-xl relative overflow-hidden">
-        
-        <form id="booking-form" class="space-y-6" data-hours={JSON.stringify(hoursMap)}>
+        <form id="booking-form" class="space-y-6" data-hours={JSON.stringify(hoursMap)} data-closed={JSON.stringify(extraClosedDates)}>
           
           <div class="space-y-4">
             <input type="text" name="name" required placeholder="Teljes név" class="w-full p-4 rounded-2xl bg-white border-none ring-1 ring-slate-200 focus:ring-2 focus:ring-pink-500 outline-none transition-all shadow-sm" />
@@ -100,9 +103,7 @@ const hoursMap = openingHours || [];
 
           <div id="time-selection" class="space-y-4 hidden">
             <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">2. Szabad időpontok</label>
-            
             <div id="time-slots" class="grid grid-cols-4 gap-2"></div>
-            
             <input type="hidden" name="date" id="final-date-input" required />
           </div>
           
@@ -134,21 +135,18 @@ const hoursMap = openingHours || [];
   const finalInput = document.getElementById('final-date-input') as HTMLInputElement | null;
   const submitBtn = document.getElementById('submit-btn') as HTMLButtonElement | null;
 
-  // Kiolvassuk a HTML-be rejtett nyitvatartási adatokat
+  // Kiolvassuk a HTML-be rejtett nyitvatartási és lezárt dátum adatokat
   const hoursArray = JSON.parse(form?.dataset.hours || '[]');
+  const closedDatesArray = JSON.parse(form?.dataset.closed || '[]'); // ÚJ: Rendkívüli zárva tartó napok tömbje
   
-  // Foglalt időpontok listája (ebbe töltjük be az adatbázisból érkező meglévő foglalásokat)
   let bookedTimestamps: number[] = [];
 
-  // ==========================================
-  // FOGLALT IDŐPONTOK LEKÉRÉSE A SZERVERRŐL
-  // ==========================================
+  // Foglalt időpontok lekérése a szerverről
   async function fetchBookedSlots() {
     try {
       const resp = await fetch('/api/get-slots');
       if (resp.ok) {
         const data = await resp.json();
-        // A visszakapott ISO dátumokat milliszekundumra alakítjuk a könnyebb matematikai összehasonlítás végett
         bookedTimestamps = data.map((d: string) => new Date(d).getTime());
       }
     } catch (e) { 
@@ -156,165 +154,134 @@ const hoursMap = openingHours || [];
     }
   }
 
-  // ==========================================
-  // SZABAD IDŐPONT (ÓRA/PERC) GOMBOK GENERÁLÁSA
-  // ==========================================
+  // Szabad időpont gombok generálása
   function generateSlots(day: Date) {
     if (!slotsDiv || !selectionArea) return;
     
-    // Töröljük a korábbi gombokat a dobozból
     slotsDiv.innerHTML = '';
     
-    // JavaScript nap lekérése (0=Vasárnap, 1=Hétfő). Az adatbázisban a Vasárnap a 7-es id-t kapta.
+    // ÚJ BIZTONSÁGI ELLENŐRZÉS: Ha a kiválasztott nap ISO formátuma benne van a rendkívüli zárva tartó napokban
+    const selectedISODate = day.toISOString().split('T')[0];
+    if (closedDatesArray.includes(selectedISODate)) {
+        slotsDiv.innerHTML = '<p class="col-span-4 text-center text-red-400 py-4 italic text-sm">Ezen a napon szabadság / rendkívüli zárvatartás van.</p>';
+        selectionArea.classList.remove('hidden');
+        return;
+    }
+
     const jsDay = day.getDay();
     const dbDayId = jsDay === 0 ? 7 : jsDay;
     
-    // ----------------------------------------
-    // HIBATŰRŐ (FALLBACK) MEGOLDÁS:
-    // Ha az adatbázisban még nincs nyitvatartás beállítva, alapértelmezetten berakjuk a 08:00 - 17:00-t,
-    // így a rendszer soha nem omlik össze.
     const dbConfig = hoursArray.find((d: any) => d.day_id === dbDayId);
     const dayConfig = dbConfig || { is_closed: false, open_time: '08:00:00', close_time: '17:00:00' };
 
-    // Ha az adott napra az van beállítva, hogy zárva (is_closed = true)
     if (dayConfig.is_closed) {
         slotsDiv.innerHTML = '<p class="col-span-4 text-center text-slate-400 py-4 italic text-sm">Ezen a napon zárva tartok.</p>';
         selectionArea.classList.remove('hidden');
         return;
     }
 
-    // Megjelenítjük az időpontválasztó dobozt
     selectionArea.classList.remove('hidden');
     const now = new Date();
 
-    // A "08:00:00" formátumból kinyerjük a kezdő és végórát (biztonságosan)
     const startHour = parseInt(dayConfig.open_time.split(':')[0], 10);
     const endHour = parseInt(dayConfig.close_time.split(':')[0], 10);
-    
-    // 3 óra hossza milliszekundumban kifejezve (ütközésvizsgálathoz)
     const threeHoursInMs = 3 * 60 * 60 * 1000;
-    
-    // Ez a változó figyeli, hogy marad-e egyáltalán kattintható gomb
     let hasAvailableSlot = false;
 
-    // Dupla ciklus: Végigmegyünk az órákon (pl. 8-tól 17-ig), és fél óránként lépkedünk (m = 0, majd m = 30)
     for (let h = startHour; h < endHour; h++) {
       for (let m = 0; m < 60; m += 30) { 
         
-        // Létrehozzuk a konkrét időpontot (pl. 2026-06-28 08:30)
         const slotDate = new Date(day);
         slotDate.setHours(h, m, 0, 0);
         const slotTime = slotDate.getTime();
 
-        // 1. Vizsgálat: Múltbéli az időpont? (Ha ma van, az elmúlt órákra már nem lehet foglalni)
         const isPast = slotDate < now;
-        
-        // 2. Vizsgálat (Ütközés): Van olyan meglévő foglalás, ami ehhez az időponthoz képest 3 órán belül van?
-        // A Math.abs() a két időpont közötti abszolút különbséget nézi.
         const isConflict = bookedTimestamps.some(bookedTime => Math.abs(slotTime - bookedTime) < threeHoursInMs);
-
-        // Ha bármelyik igaz, akkor az időpont letiltásra kerül
         const isBlocked = isPast || isConflict;
 
-        // HTML Gomb (button) létrehozása
         const btn = document.createElement('button');
         btn.type = 'button';
         
-        // Óra és perc szép formázása (pl. "8:00" helyett "08:00")
         const formattedHour = h.toString().padStart(2, '0');
         const formattedMin = m === 0 ? '00' : m.toString();
         btn.textContent = `${formattedHour}:${formattedMin}`;
         
         if (isBlocked) {
-          // Ha foglalt vagy elmúlt: letiltott szürke gomb, áthúzva
           btn.disabled = true;
           btn.className = "p-2 rounded-xl bg-slate-100 text-slate-300 cursor-not-allowed text-[10px] opacity-50 line-through";
         } else {
-          // Ha szabad időpont: kattintható gomb
           hasAvailableSlot = true;
           btn.className = "time-btn p-2 rounded-xl bg-white text-slate-700 ring-1 ring-slate-100 text-xs font-bold hover:bg-pink-50 transition-all";
           
-          // Gombkattintás esemény
           btn.onclick = () => {
-            // Először minden gombot visszateszünk az alap stílusára (kivesszük a rózsaszín hátteret)
             document.querySelectorAll('.time-btn').forEach(b => {
                 b.classList.remove('bg-pink-600', 'text-white', 'ring-pink-600');
                 b.classList.add('bg-white', 'text-slate-700', 'ring-1', 'ring-slate-100');
             });
-            // A most megkattintott gombot rózsaszínre színezzük (aktív)
             btn.classList.remove('bg-white', 'text-slate-700', 'ring-1', 'ring-slate-100');
             btn.classList.add('bg-pink-600', 'text-white', 'ring-pink-600');
             
-            // Az időzóna elcsúszásának kompenzálása, majd beírása a rejtett mezőbe (ezt küldi majd el a form)
             if (finalInput) {
               const offset = slotDate.getTimezoneOffset() * 60000;
               finalInput.value = new Date(slotDate.getTime() - offset).toISOString().slice(0, 16);
             }
           };
         }
-        
-        // Gomb hozzáadása a dobozhoz
         slotsDiv.appendChild(btn);
       }
     }
 
-    // Ha végigpörgettük az összes órát, de egyik sem volt szabad (hasAvailableSlot maradt false)
     if (!hasAvailableSlot) {
         slotsDiv.innerHTML = '<p class="col-span-4 text-center text-slate-400 py-4 italic text-sm">Erre a napra már minden időpont betelt.</p>';
     }
   }
 
-  // ==========================================
   // RENDSZER INDÍTÁSA
-  // ==========================================
   async function start() {
-    // 1. Lekérjük a foglalt időpontokat
     await fetchBookedSlots();
     
-    // 2. Kiszámoljuk a holnaputáni napot (A szerveren aznapra és másnapra tiltottuk a foglalást, így a frontend is ezt kell kövesse!)
     const today = new Date();
     const minAllowedDate = new Date(today);
-    minAllowedDate.setDate(today.getDate() + 2); // Ma + 2 nap
+    minAllowedDate.setDate(today.getDate() + 2); // Ma + 2 nap a tiltás érvényesítésére
 
-    // 3. Inicializáljuk a Flatpickr naptárat
+    // Inicializáljuk a Flatpickr naptárat
     // @ts-ignore
     flatpickr("#inline-calendar", {
       inline: true,
-      appendTo: document.getElementById('calendar-container'), // Ebbe a dobozba kerül
+      appendTo: document.getElementById('calendar-container'),
       locale: hu,
-      minDate: minAllowedDate, // A ma és holnap már ki van szürkítve, nem is kattintható!
+      minDate: minAllowedDate,
       dateFormat: "Y-m-d",
-      // Ha a vendég rákattint egy napra, lefut a mi generateSlots függvényünk
+      // ÚJ: A disable funkcióval teljesen kiszürkítjük és kattinthatatlanná tesszük az adminban beállított egyedi zárva tartó napokat
+      disable: closedDatesArray.map((dateStr: string) => {
+        // Átalakítjuk a naptár számára értelmezhető formátumra (éjfélre állítva az időt a tökéletes egyezésért)
+        const d = new Date(dateStr);
+        d.setHours(0,0,0,0);
+        return d;
+      }),
       onChange: (selectedDates: Date[]) => {
         if (selectedDates.length > 0) generateSlots(selectedDates[0]);
       }
     });
   }
 
-  // Indítás hívása
   start();
 
-  // ==========================================
-  // FORM BEKÜLDÉSE (FOGLALÁS VÉGLEGESÍTÉSE)
-  // ==========================================
+  // Form elküldés kezelése
   if (form && submitBtn) {
     form.onsubmit = async (e) => {
-      // Megakadályozzuk, hogy a böngésző újratöltse az oldalt
       e.preventDefault();
       
       const statusCont = document.getElementById('status-container');
       const btnSpan = submitBtn.querySelector('span');
 
-      // Beküldés alatt letiltjuk a gombot (hogy ne tudjon duplán kattintani)
       submitBtn.disabled = true;
       if (btnSpan) btnSpan.textContent = 'Feldolgozás...';
 
       try {
-        // Az űrlap adatainak átalakítása JSON formátummá
         const formData = new FormData(form);
         const data = Object.fromEntries(formData.entries());
 
-        // POST kérés küldése a mi backend API-nknak
         const res = await fetch('/api/book', { 
             method: 'POST', 
             headers: { 'Content-Type': 'application/json' },
@@ -324,14 +291,12 @@ const hoursMap = openingHours || [];
         if (statusCont) {
           statusCont.classList.remove('hidden');
           if (res.ok) {
-            // SIKER: Zöld üzenet
             statusCont.className = "mt-6 p-6 bg-green-50 text-green-700 rounded-3xl border border-green-200";
             statusCont.textContent = "Sikeres foglalás! E-mailben küldtük a visszaigazoló linket.";
-            form.reset(); // Űrlap kiürítése
-            selectionArea?.classList.add('hidden'); // Órák elrejtése
-            await fetchBookedSlots(); // Foglalások frissítése a háttérben
+            form.reset();
+            selectionArea?.classList.add('hidden');
+            await fetchBookedSlots();
           } else {
-            // HIBA: Piros üzenet (pl. "Ez az időpont már foglalt")
             const r = await res.json();
             statusCont.className = "mt-6 p-6 bg-red-50 text-red-700 rounded-3xl border border-red-200";
             statusCont.textContent = r.error || "Hiba történt a foglalás során.";
@@ -340,7 +305,6 @@ const hoursMap = openingHours || [];
       } catch (err) {
         console.error("Váratlan hiba:", err);
       } finally {
-        // Akármi is történt (siker vagy hiba), a gombot visszaállítjuk az eredeti állapotába
         submitBtn.disabled = false;
         if (btnSpan) btnSpan.textContent = 'Időpont véglegesítése';
       }
@@ -349,7 +313,8 @@ const hoursMap = openingHours || [];
 </script>
 
 <style>
-  /* A naptár kinézetének Tailwind-hez igazítása */
   :global(.flatpickr-calendar) { box-shadow: none !important; border: none !important; width: 100% !important; background: transparent !important; }
   :global(.flatpickr-day.selected) { background: #db2777 !important; border-color: #db2777 !important; border-radius: 12px !important; }
+  /* ÚJ STÍLUS: A letiltott/szabadságos napok vizuálisan is legyenek áthúzva és halványabbak */
+  :global(.flatpickr-day.flatpickr-disabled) { color: #cbd5e1 !important; text-decoration: line-through !important; cursor: not-allowed !important; }
 </style>

@@ -25,6 +25,7 @@ let galleryItems = [];
 let uniqueCategories = [];
 let openingHours = [];
 let siteSettings = [];
+let closedDates = []; // Új változó a rendkívüli zárvatartásoknak
 
 // Ha a felhasználó be van jelentkezve, lekérjük az összes adatot a Supabase-ből
 if (isAuthenticated) {
@@ -33,13 +34,15 @@ if (isAuthenticated) {
     const { data: gData } = await supabase.from('gallery').select('*').order('created_at', { ascending: false });
     const { data: hData } = await supabase.from('opening_hours').select('*').order('day_id', { ascending: true });
     const { data: sData } = await supabase.from('site_settings').select('*');
+    const { data: dData } = await supabase.from('closed_dates').select('*').order('closed_date', { ascending: true });
     
-    // Adatok átadása a lokális változóknak (ha nincs adat, üres tömböt kapnak)
+    // Adatok átadása a lokális változóknak
     bookings = bData || [];
     priceCategories = cData || [];
     galleryItems = gData || [];
     openingHours = hData || [];
     siteSettings = sData || [];
+    closedDates = dData || [];
     
     // Egyedi kategóriák kiszűrése a galériából a lenyíló ajánlásokhoz
     uniqueCategories = [...new Set(galleryItems.map(item => item.category))];
@@ -51,6 +54,7 @@ const getSetting = (key) => siteSettings.find(s => s.key === key)?.value || "";
 
 <Layout title="Vezérlőpult">
     <div class="min-h-screen bg-[#fdf2f8] font-sans pb-20">
+        <!-- HA NINCS BEJELENTKEZVE: Jelszó kérő felület -->
         {!isAuthenticated ? (
             <div class="flex items-center justify-center pt-32 px-6">
                 <div class="max-w-md w-full bg-white rounded-[3rem] p-12 shadow-2xl border border-pink-100 text-center">
@@ -62,7 +66,9 @@ const getSetting = (key) => siteSettings.find(s => s.key === key)?.value || "";
                 </div>
             </div>
         ) : (
+            <!-- HA BE VAN JELENTKEZVE: A teljes Vezérlőpult -->
             <div class="max-w-6xl mx-auto px-6 pt-10">
+                <!-- Fejléc és Kijelentkezés -->
                 <div class="flex justify-between items-center mb-10">
                     <div>
                         <h1 class="text-5xl font-serif font-bold text-slate-900 tracking-tight italic">Vezérlőpult</h1>
@@ -71,13 +77,16 @@ const getSetting = (key) => siteSettings.find(s => s.key === key)?.value || "";
                     <button onclick="document.cookie='admin_auth=;path=/;expires=Thu, 01 Jan 1970 00:00:01 GMT;';location.reload();" class="px-6 py-2 bg-white text-pink-600 font-bold rounded-full shadow-sm border border-pink-100 text-xs uppercase tracking-widest hover:bg-pink-50 transition-all">Kijelentkezés</button>
                 </div>
 
+                <!-- Admin Navigációs Tabok -->
                 <div class="flex flex-wrap gap-4 mb-8">
                     <button class="tab-btn px-8 py-3 rounded-full font-bold transition-all bg-[#db2777] text-white shadow-lg" data-target="sec-b">Foglalások</button>
                     <button class="tab-btn px-8 py-3 rounded-full font-bold transition-all bg-white text-slate-500 border border-pink-100" data-target="sec-p">Árazás</button>
                     <button class="tab-btn px-8 py-3 rounded-full font-bold transition-all bg-white text-slate-500 border border-pink-100" data-target="sec-g">Galéria</button>
                     <button class="tab-btn px-8 py-3 rounded-full font-bold transition-all bg-white text-slate-500 border border-pink-100" data-target="sec-s">Beállítások</button>
+                    <button class="tab-btn px-8 py-3 rounded-full font-bold transition-all bg-white text-slate-500 border border-pink-100" data-target="sec-c">Szabadságok / Zárva</button>
                 </div>
 
+                <!-- 1. SZEKCIÓ: Foglalások Kezelése -->
                 <div id="sec-b" class="admin-section block animate-fade-in">
                     <div class="bg-white rounded-[3rem] shadow-2xl shadow-pink-200/20 border border-pink-50 overflow-x-auto">
                         <table class="w-full text-left min-w-[700px]">
@@ -105,6 +114,7 @@ const getSetting = (key) => siteSettings.find(s => s.key === key)?.value || "";
                     </div>
                 </div>
 
+                <!-- 2. SZEKCIÓ: Árak és Kategóriák Kezelése -->
                 <div id="sec-p" class="admin-section hidden space-y-12 animate-fade-in">
                     <div class="bg-slate-900 rounded-[3.5rem] p-12 text-white shadow-2xl relative overflow-hidden">
                         <h2 class="text-3xl font-serif font-bold mb-6">Új kategória hozzáadása</h2>
@@ -142,6 +152,7 @@ const getSetting = (key) => siteSettings.find(s => s.key === key)?.value || "";
                     ))}
                 </div>
 
+                <!-- 3. SZEKCIÓ: Galéria és Képfeltöltés (Javított) -->
                 <div id="sec-g" class="admin-section hidden space-y-12 animate-fade-in">
                     <div class="bg-white rounded-[3.5rem] p-10 md:p-12 shadow-2xl border border-pink-100 relative overflow-hidden">
                         <h2 class="text-4xl font-serif font-bold text-slate-900 mb-8 tracking-tight">Új munka hozzáadása</h2>
@@ -164,7 +175,6 @@ const getSetting = (key) => siteSettings.find(s => s.key === key)?.value || "";
                             <button type="submit" id="g-submit-btn" class="md:col-span-2 py-6 bg-pink-600 text-white font-bold rounded-3xl shadow-xl shadow-pink-200 active:scale-95 transition-all">Kép mentése</button>
                         </form>
                     </div>
-                    
                     <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
                         {galleryItems.map((item) => (
                             <div class="group relative aspect-[4/5] rounded-[2rem] overflow-hidden bg-white shadow-lg border border-pink-50 transition-all hover:shadow-2xl">
@@ -180,6 +190,7 @@ const getSetting = (key) => siteSettings.find(s => s.key === key)?.value || "";
                     </div>
                 </div>
 
+                <!-- 4. SZEKCIÓ: Általános Beállítások és Nyitvatartás -->
                 <div id="sec-s" class="admin-section hidden space-y-8 animate-fade-in">
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
                         <div class="bg-white rounded-[3rem] p-10 shadow-xl border border-pink-50">
@@ -200,7 +211,6 @@ const getSetting = (key) => siteSettings.find(s => s.key === key)?.value || "";
                                 <button type="submit" class="w-full py-4 bg-pink-600 text-white font-bold rounded-2xl shadow-lg hover:bg-pink-700 transition-all active:scale-95">Adatok mentése</button>
                             </form>
                         </div>
-                        
                         <div class="bg-white rounded-[3rem] p-10 shadow-xl border border-pink-50">
                             <h2 class="text-2xl font-serif font-bold text-slate-800 mb-6 border-b border-pink-50 pb-4">Napi nyitvatartás</h2>
                             <form id="admin-hours-form" class="space-y-4">
@@ -220,20 +230,77 @@ const getSetting = (key) => siteSettings.find(s => s.key === key)?.value || "";
                         </div>
                     </div>
                 </div>
+
+                <!-- 5. SZEKCIÓ: Szabadságok és Rendkívüli Zárvatartások (Többszörös Kijelöléssel) -->
+                <div id="sec-c" class="admin-section hidden space-y-8 animate-fade-in">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <!-- Naptáras többnapos zárvatartás beállítása -->
+                        <div class="bg-white rounded-[3rem] p-10 shadow-xl border border-pink-50">
+                            <h2 class="text-2xl font-serif font-bold text-slate-800 mb-6 border-b border-pink-50 pb-4">Zárvatartás beállítása</h2>
+                            <form id="admin-closed-date-form" class="space-y-6">
+                                <div class="space-y-2">
+                                    <label class="text-[10px] uppercase tracking-widest font-bold text-slate-400 ml-2">Válassz ki napokat (többet is kijelölhetsz)</label>
+                                    <div id="admin-calendar-container" class="rounded-3xl overflow-hidden shadow-inner ring-1 ring-slate-200 bg-white p-2 min-h-75">
+                                        <input type="text" id="admin-multiple-calendar" required class="hidden" />
+                                    </div>
+                                </div>
+                                <div class="space-y-2">
+                                    <label class="text-[10px] uppercase tracking-widest font-bold text-slate-400 ml-2">Indok / Megjegyzés (minden kijelölt napra érvényes lesz)</label>
+                                    <input type="text" id="c-reason" placeholder="Pl: Nyári szabadság, Továbbképzés..." class="w-full p-4 rounded-2xl bg-slate-50 border-none ring-1 ring-slate-200 outline-none focus:ring-2 focus:ring-pink-500 transition-all italic" />
+                                </div>
+                                <button type="submit" id="c-submit-btn" class="w-full py-4 bg-pink-600 text-white font-bold rounded-2xl shadow-lg hover:bg-pink-700 transition-all active:scale-95">Kijelölt napok rögzítése</button>
+                            </form>
+                        </div>
+
+                        <!-- Aktuális lezárt napok listája -->
+                        <div class="bg-white rounded-[3rem] p-10 shadow-xl border border-pink-50">
+                            <h2 class="text-2xl font-serif font-bold text-slate-800 mb-6 border-b border-pink-50 pb-4">Beállított zárva tartó napok</h2>
+                            {closedDates.length === 0 ? (
+                                <p class="text-slate-400 text-sm italic text-center py-8">Nincs beállítva egyedi zárva tartó nap.</p>
+                            ) : (
+                                <div class="max-h-[450px] overflow-y-auto space-y-3 pr-2">
+                                    {closedDates.map((d) => (
+                                        <div class="flex justify-between items-center p-4 bg-red-50/50 border border-red-100 rounded-2xl">
+                                            <div>
+                                                <p class="font-bold text-slate-800">{new Date(d.closed_date).toLocaleDateString('hu-HU', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' })}</p>
+                                                {d.reason && <p class="text-xs text-slate-500 italic mt-0.5">{d.reason}</p>}
+                                            </div>
+                                            <button class="del-closed-date p-2 text-slate-400 hover:text-red-600 transition-all" data-id={d.id}>
+                                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                                            </button>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+
             </div>
         )}
     </div>
 </Layout>
 
+<!-- Flatpickr betöltése az admin felületre is a többnapos kijelöléshez -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<script is:inline src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+
 <script>
-    // --- KLIENS OLDALI JAVASCRIPT / TYPESCRIPT ---
+    // --- KLIENS OLDALI JAVASCRIPT ---
     import { supabase } from '../lib/supabase';
+
+    // Magyar nyelv beállítás naptárhoz
+    const hu = {
+        weekdays: { shorthand: ["V", "H", "K", "Sz", "Cs", "P", "Sz"], longhand: ["Vasárnap", "Hétfő", "Kedd", "Szerda", "Csütörtök", "Péntek", "Szombat"] },
+        months: { shorthand: ["Jan", "Feb", "Már", "Ápr", "Máj", "Jún", "Júl", "Aug", "Szep", "Okt", "Nov", "Dec"], longhand: ["Január", "Február", "Március", "Április", "Május", "Június", "Július", "Augusztus", "Szeptember", "Október", "November", "December"] },
+        firstDayOfWeek: 1, ordinal: () => "."
+    };
 
     document.addEventListener('DOMContentLoaded', () => {
         const tabs = document.querySelectorAll('.tab-btn');
         const sections = document.querySelectorAll('.admin-section');
 
-        // Navigációs fülek logikája (Tab váltó)
+        // Navigációs fülek (Tabs) működtetése
         function showTab(targetId: string) {
             sections.forEach(s => s.classList.add('hidden'));
             const target = document.getElementById(targetId);
@@ -247,7 +314,6 @@ const getSetting = (key) => siteSettings.find(s => s.key === key)?.value || "";
                     t.classList.add('bg-white', 'text-slate-500');
                 }
             });
-            // Mentjük az aktív fület munkamenetbe, hogy frissítéskor ne ugorjon vissza az elsőre
             sessionStorage.setItem('activeAdminTab', targetId);
         }
 
@@ -256,7 +322,7 @@ const getSetting = (key) => siteSettings.find(s => s.key === key)?.value || "";
 
         tabs.forEach(tab => tab.addEventListener('click', () => showTab(tab.getAttribute('data-target') || 'sec-b')));
 
-        // Nyitvatartás: Zárva gomb kattintásra tiltja az idő mezőket
+        // Nyitvatartás: "Zárva" kapcsoló kezelése
         document.querySelectorAll('.closed-checkbox').forEach(checkbox => {
             checkbox.addEventListener('change', (e) => {
                 const dayId = (e.target as HTMLInputElement).dataset.day;
@@ -272,7 +338,7 @@ const getSetting = (key) => siteSettings.find(s => s.key === key)?.value || "";
             });
         });
 
-        // Általános beállítások form beküldése
+        // Kapcsolati adatok form beküldése
         document.getElementById('admin-settings-form')?.addEventListener('submit', async (e) => {
             e.preventDefault();
             const formData = new FormData(e.target as HTMLFormElement);
@@ -281,7 +347,7 @@ const getSetting = (key) => siteSettings.find(s => s.key === key)?.value || "";
             location.reload();
         });
 
-        // Nyitvatartás form beküldése
+        // Heti nyitvatartás form beküldése
         document.getElementById('admin-hours-form')?.addEventListener('submit', async (e) => {
             e.preventDefault();
             const formData = new FormData(e.target as HTMLFormElement);
@@ -296,7 +362,7 @@ const getSetting = (key) => siteSettings.find(s => s.key === key)?.value || "";
             location.reload();
         });
 
-        // Foglalás törlése (API Route hívással)
+        // Foglalás törlése és értesítő kiküldése (API)
         document.querySelectorAll('.del-booking').forEach(btn => btn.addEventListener('click', async (e) => {
             const btn = e.currentTarget as HTMLElement;
             const id = btn.dataset.id;
@@ -318,7 +384,7 @@ const getSetting = (key) => siteSettings.find(s => s.key === key)?.value || "";
             }
         }));
 
-        // Árak frissítése
+        // Szolgáltatás árak mentése
         document.querySelectorAll('.save-price').forEach(btn => btn.addEventListener('click', async (e) => {
             const container = (e.currentTarget as HTMLElement).closest('.grid');
             const data = {
@@ -331,84 +397,117 @@ const getSetting = (key) => siteSettings.find(s => s.key === key)?.value || "";
             location.reload();
         }));
 
-        // --- ÚJ / JAVÍTOTT RÉSZ: Galéria képfeltöltés kezelése ---
+        // --- GALÉRIA KÉPFELTÖLTÉS (Működő verzió szinkronizált ID-kkal) ---
         document.getElementById('gallery-upload-form')?.addEventListener('submit', async (e) => {
             e.preventDefault();
-            
             const btn = document.getElementById('g-submit-btn') as HTMLButtonElement;
-            btn.disabled = true;
-            btn.innerText = "Feltöltés...";
+            btn.disabled = true; btn.innerText = "Feltöltés...";
 
             const fileEl = document.getElementById('g-file') as HTMLInputElement;
             const file = fileEl.files?.[0];
             const title = (document.getElementById('g-title') as HTMLInputElement).value;
             const category = (document.getElementById('g-category') as HTMLInputElement).value;
 
-            if (!file) {
-                btn.disabled = false;
-                btn.innerText = "Kép mentése";
-                return;
-            }
+            if (!file) { btn.disabled = false; btn.innerText = "Kép mentése"; return; }
 
-            // Egyedi fájlnév generálás időbélyeggel
             const fileName = `${Date.now()}-${file.name}`;
+            const { data: storageData, error: storageError } = await supabase.storage.from('gallery').upload(fileName, file, { cacheControl: '3600', upsert: false });
 
-            // 1. Storage feltöltés a 'gallery' bucketbe
-            const { data: storageData, error: storageError } = await supabase.storage
-                .from('gallery')
-                .upload(fileName, file, {
-                    cacheControl: '3600',
-                    upsert: false
-                });
-
-            if (storageError) {
-                console.error("Storage hiba:", storageError);
-                alert(`Feltöltési hiba: ${storageError.message}`);
-                btn.disabled = false;
-                btn.innerText = "Kép mentése";
-                return;
+            if (storageError) { 
+                console.error("Storage hiba:", storageError); 
+                alert(`Feltöltési hiba: ${storageError.message}`); 
+                btn.disabled = false; btn.innerText = "Kép mentése"; 
+                return; 
             }
 
-            // 2. Publikus URL lekérése
             const { data: { publicUrl } } = supabase.storage.from('gallery').getPublicUrl(fileName);
+            const { error: dbError } = await supabase.from('gallery').insert([{ title, category, src: publicUrl, storage_path: fileName }]);
 
-            // 3. Mentés az adatbázis 'gallery' táblájába
-            const { error: dbError } = await supabase.from('gallery').insert([{
-                title,
-                category,
-                src: publicUrl,
-                storage_path: fileName
-            }]);
-
-            if (dbError) {
-                console.error("Adatbázis hiba:", dbError.message);
-                alert("Adatbázis mentési hiba történt!");
-                btn.disabled = false;
-                btn.innerText = "Kép mentése";
-                return;
+            if (dbError) { 
+                console.error("Adatbázis hiba:", dbError.message); 
+                alert("Adatbázis mentési hiba!"); 
+                btn.disabled = false; btn.innerText = "Kép mentése"; 
+                return; 
             }
 
             alert("Kép sikeresen mentve!");
             location.reload();
         });
 
-        // Galéria elem törlése (Adatbázisból ÉS Storage-ból is)
+        // Galéria kép törlése (Adatbázisból és Storage-ból is)
         document.querySelectorAll('.del-gallery-item').forEach(btn => btn.addEventListener('click', async (e) => {
             const target = e.currentTarget as HTMLElement;
-            const id = target.dataset.id;
-            const path = target.dataset.path;
-
+            const id = target.dataset.id; const path = target.dataset.path;
             if (!confirm('Biztosan törlöd a képet?')) return;
+            if (path) await supabase.storage.from('gallery').remove([path]);
+            await supabase.from('gallery').delete().eq('id', id);
+            alert("Kép törölve!");
+            location.reload();
+        }));
 
-            // Ha van elmentett storage path, onnan is töröljük a fizikai fájlt
-            if (path) {
-                await supabase.storage.from('gallery').remove([path]);
+        // --- SZABADSÁGOK / ZÁRVATARTÁS (Többszörös naptár kijelölés kezelése) ---
+        let selectedDatesArray: string[] = [];
+        
+        // @ts-ignore
+        flatpickr("#admin-multiple-calendar", {
+            inline: true,
+            appendTo: document.getElementById('admin-calendar-container'),
+            locale: hu,
+            mode: "multiple", // Lehetővé teszi több nap kijelölését
+            dateFormat: "Y-m-d",
+            minDate: "today",
+            onChange: (selectedDates: Date[], dateStr: string) => {
+                // A kapott vesszős stringet tömbbé alakítjuk
+                selectedDatesArray = dateStr ? dateStr.split(", ").map(d => d.trim()) : [];
+            }
+        });
+
+        // Több nap mentése egyszerre a Supabase-be
+        document.getElementById('admin-closed-date-form')?.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            if (selectedDatesArray.length === 0) {
+                alert("Kérlek, válassz ki legalább egy napot a naptárban!");
+                return;
             }
 
-            // Törlés az adatbázis táblából
-            await supabase.from('gallery').delete().eq('id', id);
-            
-            alert("Kép törölve!");
+            const btn = document.getElementById('c-submit-btn') as HTMLButtonElement;
+            btn.disabled = true; btn.innerText = "Mentés...";
+
+            const reasonInput = document.getElementById('c-reason') as HTMLInputElement;
+            const reason = reasonInput.value;
+
+            // Bulk objektum felépítése
+            const rowsToInsert = selectedDatesArray.map(date => ({
+                closed_date: date,
+                reason: reason || null
+            }));
+
+            const { error } = await supabase.from('closed_dates').insert(rowsToInsert);
+
+            if (error) {
+                console.error(error);
+                if (error.message.includes("unique") || error.code === "23505") {
+                    alert("Hiba: A kijelölt napok között van olyan, ami már korábban le lett zárva!");
+                } else {
+                    alert(`Hiba történt: ${error.message}`);
+                }
+                btn.disabled = false; btn.innerText = "Kijelölt napok rögzítése";
+                return;
+            }
+
+            alert(`${selectedDatesArray.length} nap sikeresen lezárva! 🎀`);
+            location.reload();
+        });
+
+        // Szabadság nap törlése a listából
+        document.querySelectorAll('.del-closed-date').forEach(btn => btn.addEventListener('click', async (e) => {
+            const target = e.currentTarget as HTMLElement;
+            const id = target.dataset.id;
+            if (!confirm('Biztosan újra nyitottá teszed ezt a napot?')) return;
+
+            await supabase.from('closed_dates').delete().eq('id', id);
+            alert("A nap sikeresen eltávolítva!");
             location.reload();
         }));
     });
@@ -417,4 +516,8 @@ const getSetting = (key) => siteSettings.find(s => s.key === key)?.value || "";
 <style>
     .animate-fade-in { animation: fadeIn 0.3s ease-out; }
     @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+
+    /* Admin Flatpickr testreszabása az összképért */
+    :global(#admin-calendar-container .flatpickr-calendar) { box-shadow: none !important; border: none !important; width: 100% !important; background: transparent !important; }
+    :global(#admin-calendar-container .flatpickr-day.selected) { background: #db2777 !important; border-color: #db2777 !important; border-radius: 12px !important; }
 </style>
