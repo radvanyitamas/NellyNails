@@ -1,30 +1,21 @@
 // ==========================================
 // 1. IMPORTÁLÁSOK ÉS INICIALIZÁLÁS
 // ==========================================
-import type { APIRoute } from 'astro'; // Az Astro API végpontok típusdefiníciója
-import { Resend } from 'resend'; // A Resend e-mail küldő szolgáltatás könyvtára
-import { getEmailHtml } from '../../lib/emailTemplate'; // Saját HTML e-mail sablon importálása a vendégnek
-import { supabase } from '../../lib/supabase'; // A Supabase adatbázis kliens importálása
+import type { APIRoute } from 'astro'; 
+import { Resend } from 'resend'; 
+import { getEmailHtml } from '../../lib/emailTemplate'; 
+import { supabase } from '../../lib/supabase'; 
 
-// Környezeti változók (env) beolvasása. A biztonságos API kulcsot tartalmazza az e-mail küldéshez.
+// Értékes API kulcs beolvasása a környezeti változókból
 const apiKey = import.meta.env.RESEND_API_KEY;
-// Csak akkor hozzuk létre a Resend klienst, ha létezik az API kulcs, ezzel megelőzve az összeomlást.
 const resend = apiKey ? new Resend(apiKey) : null;
-
-// Segédfüggvény egy véletlenszerű, biztonságos lemondási token generálásához (ha a Supabase nem generálja magától)
-function generateToken(): string {
-  return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
-}
 
 // ==========================================
 // 2. AZ API VÉGPONT DEFINIÁLÁSA (POST KÉRÉS)
 // ==========================================
 export const POST: APIRoute = async ({ request }) => {
   try {
-    // Megnézzük, milyen formátumban érkeztek az adatok
     const contentType = request.headers.get('content-type');
-    
-    // Változók előkészítése az adatok tárolására
     let name, email, phone, dateStr;
 
     // ==========================================
@@ -55,9 +46,9 @@ export const POST: APIRoute = async ({ request }) => {
     }
 
     const requestedDate = new Date(dateStr);
-    const now = new Date(); // A szerver aktuális ideje
+    const now = new Date(); 
 
-    // Megakadályozzuk, hogy múltbéli időpontra foglaljanak
+    // Múltbéli időpont kiszűrése
     if (requestedDate < now) {
       return new Response(JSON.stringify({ error: "Nem foglalhatsz múltbéli időpontot!" }), {
         status: 400,
@@ -66,19 +57,18 @@ export const POST: APIRoute = async ({ request }) => {
     }
 
     // ==========================================
-    // 4/b. ÚJ ELLENŐRZÉS: RENDKÍVÜLI ZÁRVATARTÁS
+    // 4/b. RENDKÍVÜLI ZÁRVATARTÁS ELLENŐRZÉSE
     // ==========================================
-    // Kivonjuk a tiszta dátumot YYYY-MM-DD formátumban
+    // Átalakítjuk a kért napot tiszta YYYY-MM-DD formátumra
     const inputDateISO = requestedDate.toISOString().split('T')[0];
 
-    // Megnézzük, hogy ez a nap szerepel-e a lezárt napok között
+    // Megnézzük, Nelly lezárta-e ezt a napot a naptárban
     const { data: isClosedDay } = await supabase
       .from('closed_dates')
       .select('reason')
       .eq('closed_date', inputDateISO)
       .maybeSingle();
 
-    // Ha Nelly lezárta ezt a napot az adminban, visszautasítjuk a foglalást
     if (isClosedDay) {
       return new Response(JSON.stringify({ error: `Ezen a napon zárva tartunk! Indok: ${isClosedDay.reason || 'Szabadság'}` }), {
         status: 400,
@@ -90,12 +80,9 @@ export const POST: APIRoute = async ({ request }) => {
     // 5. ÜTKÖZÉSVIZSGÁLAT (3 ÓRÁS SZABÁLY)
     // ==========================================
     const threeHoursInMs = 3 * 60 * 60 * 1000;
-    
-    // Javítva az időablak: a kért időponttól visszafele és előre számolunk 3 órát
     const minTime = new Date(requestedDate.getTime() - threeHoursInMs).toISOString();
     const maxTime = new Date(requestedDate.getTime() + threeHoursInMs).toISOString();
 
-    // Lekérdezzük a Supabase-ből, van-e már aktív foglalás ebben az időablakban
     const { data: conflict } = await supabase
       .from('bookings')
       .select('id')
@@ -112,12 +99,10 @@ export const POST: APIRoute = async ({ request }) => {
     }
 
     // ==========================================
-    // 6. ADATBÁZIS MENTÉS ÉS TOKEN GENERÁLÁS
+    // 6. ADATBÁZIS MENTÉS
     // ==========================================
-    // Létrehozunk egy egyedi, nehezen kitalálható lemondási tokent
-    const cancelToken = generateToken();
-
-    // Beszúrjuk az új foglalást a Supabase 'bookings' táblájába
+    // Nem küldünk kézzel generált szöveges tokent, a Supabase automatikusan legenerálja 
+    // a sémában lévő default biztonságos UUID-t, amit a select().single() azonnal visszaad.
     const { data: booking, error: dbError } = await supabase
       .from('bookings')
       .insert([{ 
@@ -125,13 +110,12 @@ export const POST: APIRoute = async ({ request }) => {
         email, 
         phone, 
         booking_date: requestedDate.toISOString(), 
-        status: 'pending',
-        cancel_token: cancelToken // Elmentjük az egyedi tokent a lemondásokhoz!
+        status: 'pending'
       }])
       .select().single(); 
 
     if (dbError || !booking) {
-      console.error("Adatbázis hiba beszúráskor:", dbError);
+      console.error("Adatbázis hiba beszúráskor:", dbError.message);
       return new Response(JSON.stringify({ error: "Adatbázis mentési hiba." }), { 
         status: 500,
         headers: { 'Content-Type': 'application/json' }
@@ -139,7 +123,7 @@ export const POST: APIRoute = async ({ request }) => {
     }
 
     // ==========================================
-    // 7. E-MAIL KÜLDÉSI FOLYAMAT
+    // 7. E-MAIL KÜLDÉSI FOLYAMAT (RESEND)
     // ==========================================
     if (resend) {
       try {
@@ -147,9 +131,9 @@ export const POST: APIRoute = async ({ request }) => {
         const protocol = host.includes('localhost') ? 'http' : 'https';
         const domain = `${protocol}://${host}`;
         
-        // JAVÍTVA: A linkek most már a megerősítésnél az ID-t, a lemondásnál a TOKEN-t küldik el az Astro oldalaknak!
+        // JAVÍTVA: A lemondó link hajszálpontosan a /kezeles oldalra mutat a Supabase UUID tokenjével
         const confirmLink = `${domain}/megerosites?id=${booking.id}`;
-        const cancelLink = `${domain}/lemondas?token=${booking.cancel_token}`; 
+        const cancelLink = `${domain}/kezeles?token=${booking.cancel_token}`; 
         const adminLink = `${domain}/admin`; 
         
         const formattedDate = requestedDate.toLocaleString('hu-HU', { 
@@ -164,7 +148,7 @@ export const POST: APIRoute = async ({ request }) => {
           html: await getEmailHtml(name, formattedDate, confirmLink, cancelLink)
         });
 
-        // --- 7/b. E-MAIL NELLYNEK (ADMIN) ---
+        // --- 7/b. E-MAIL NELLYNEK (ADMIN ÉRTESÍTÉS) ---
         await resend.emails.send({
           from: 'Nails by Nelly System <info@nailsbynelly.hu>',
           to: ['nellirad@gmail.com'], 
@@ -183,30 +167,24 @@ export const POST: APIRoute = async ({ request }) => {
 
               <p style="margin-top: 30px;">A foglalás kezeléséhez kattints az alábbi gombra:</p>
               <a href="${adminLink}" style="display: inline-block; background-color: #db2777; color: white; padding: 12px 25px; text-decoration: none; border-radius: 50px; font-weight: bold;">Admin felület megnyitása</a>
-              
-              <p style="font-size: 12px; color: #9ca3af; margin-top: 40px; border-top: 1px solid #eee; padding-top: 10px;">
-                Ez egy automatikus üzenet a nailsbynelly.hu rendszeréből.
-              </p>
             </div>
           `
         });
 
-        console.log(`Email-ek elküldve: Vendég (${email}) és Admin (nellirad@gmail.com)`);
+        console.log(`Email sikeresen kiküldve.`);
       } catch (emailErr) {
-        console.error("E-mail hiba:", emailErr);
+        console.error("E-mail hiba (az adatbázis mentés sikeres volt):", emailErr);
       }
     }
 
-    // ==========================================
-    // 8. SIKERES VÁLASZ A FRONTENDNEK
-    // ==========================================
+    // Sikeres visszajelzés a frontend naptárnak
     return new Response(JSON.stringify({ success: true, bookingId: booking.id }), { 
       status: 200,
       headers: { 'Content-Type': 'application/json' }
     });
 
   } catch (error) {
-    console.error("Súlyos szerverhiba:", error);
+    console.error("Súlyos váratlan szerverhiba:", error);
     return new Response(JSON.stringify({ error: "Váratlan szerverhiba." }), { 
       status: 500,
       headers: { 'Content-Type': 'application/json' }
