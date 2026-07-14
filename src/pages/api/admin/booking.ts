@@ -102,7 +102,7 @@ export const POST: APIRoute = async ({ request }) => {
     // Létrehozzuk a linkeket, amik az emailbe kerülnek
     const origin = new URL(request.url).origin; // Az aktuális weboldal gyökér URL-je (pl. https://nailsbynelly.hu)
     const confirmLink = `${origin}/api/confirm?id=${booking.id}`; // Megerősítő link
-    const manageLink = `${origin}/kezeles?token=${booking.cancel_token}`; // Kezelő/lemondó link
+    const manageLink = `${origin}/manage-booking?token=${booking.cancel_token}`; // Kezelő/lemondó link
     
     // Szépen formázott magyar dátum létrehozása az e-mail szövegéhez (pl: 2026. június 28. 14:00)
     const formattedDate = requestedDate.toLocaleString('hu-HU', { 

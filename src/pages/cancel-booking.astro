@@ -67,7 +67,7 @@ const formattedDate = new Date(booking.booking_date).toLocaleString('hu-HU', {
     try {
         const res = await fetch(`/api/cancel?id=${id}`);
         if (res.ok) {
-            window.location.href = '/lemondas-sikeres';
+            window.location.href = '/cancel-success';
         } else {
             alert("Hiba történt. Lehet, hogy már törölték ezt a foglalást.");
             window.location.href = '/';

@@ -8,8 +8,8 @@ export const GET: APIRoute = async () => {
   const pages = [
     "",              // Főoldal
     "/admin",        // Bár ez az admin, a kereső látni fogja (opcionális)
-    "/impresszum",
-    "/adatvedelem",
+    "/imprint",
+    "/privacy-policy",
   ];
 
   // Felépítjük a hivatalos XML struktúrát

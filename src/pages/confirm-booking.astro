@@ -72,7 +72,7 @@ const formattedDate = new Date(booking.booking_date).toLocaleString('hu-HU', {
       const res = await fetch(`/api/confirm?id=${id}`);
       
       if (res.ok) {
-        window.location.href = '/sikeres-megerosites';
+        window.location.href = '/confirm-booking';
       } else {
         throw new Error("Hiba történt");
       }

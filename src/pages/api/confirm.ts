@@ -23,5 +23,5 @@ export const GET: APIRoute = async ({ url, redirect }) => {
     name: booking.name
   });
 
-  return redirect(`/koszonjuk?${searchParams.toString()}`);
+  return redirect(`/thank-you?${searchParams.toString()}`);
 };

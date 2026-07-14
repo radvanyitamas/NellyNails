@@ -3,7 +3,7 @@
 import Layout from '../layouts/Layout.astro';
 import { supabase } from '../lib/supabase';
 
-// 1. LÉPÉS: Kinyerjük a lemondási tokent az URL-ből (pl. /kezeles?token=valami)
+// 1. LÉPÉS: Kinyerjük a lemondási tokent az URL-ből (pl. /manage-booking?token=valami)
 const token = Astro.url.searchParams.get('token');
 
 // 2. LÉPÉS: Lekérjük a konkrét foglalást a Supabase-ből a lemondási token alapján

@@ -129,8 +129,8 @@ export const POST: APIRoute = async ({ request }) => {
         const protocol = host.includes('localhost') ? 'http' : 'https';
         const domain = `${protocol}://${host}`;
         
-        const confirmLink = `${domain}/megerosites?id=${booking.id}`;
-        const cancelLink = `${domain}/kezeles?token=${booking.cancel_token}`; 
+        const confirmLink = `${domain}/confirm-booking?id=${booking.id}`;
+        const cancelLink = `${domain}/manage-booking?token=${booking.cancel_token}`; 
         const adminLink = `${domain}/admin`; 
         
         const formattedDate = requestedDate.toLocaleString('hu-HU', { 
