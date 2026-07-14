@@ -101,8 +101,6 @@ export const POST: APIRoute = async ({ request }) => {
     // ==========================================
     // 6. ADATBÁZIS MENTÉS
     // ==========================================
-    // Nem küldünk kézzel generált szöveges tokent, a Supabase automatikusan legenerálja 
-    // a sémában lévő default biztonságos UUID-t, amit a select().single() azonnal visszaad.
     const { data: booking, error: dbError } = await supabase
       .from('bookings')
       .insert([{ 
@@ -131,7 +129,6 @@ export const POST: APIRoute = async ({ request }) => {
         const protocol = host.includes('localhost') ? 'http' : 'https';
         const domain = `${protocol}://${host}`;
         
-        // JAVÍTVA: A lemondó link hajszálpontosan a /kezeles oldalra mutat a Supabase UUID tokenjével
         const confirmLink = `${domain}/megerosites?id=${booking.id}`;
         const cancelLink = `${domain}/kezeles?token=${booking.cancel_token}`; 
         const adminLink = `${domain}/admin`; 
@@ -139,6 +136,19 @@ export const POST: APIRoute = async ({ request }) => {
         const formattedDate = requestedDate.toLocaleString('hu-HU', { 
             year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' 
         });
+
+        // --- GOOGLE NAPTÁR LINK GENERÁLÁSA ---
+        const endDate = new Date(requestedDate.getTime() + threeHoursInMs);
+        
+        // Dátum formázása a Google Naptár elvárásai szerint (UTC, írásjelek nélkül: YYYYMMDDTHHMMSSZ)
+        const formatGCalDate = (date: Date) => date.toISOString().replace(/-|:|\.\d\d\d/g, '');
+        const gCalStartTime = formatGCalDate(requestedDate);
+        const gCalEndTime = formatGCalDate(endDate);
+        
+        const gCalTitle = encodeURIComponent(`${name} időpontot foglalt`);
+        const gCalDetails = encodeURIComponent(`Vendég neve: ${name}\nTelefonszám: ${phone || 'Nincs megadva'}\nE-mail cím: ${email}`);
+        
+        const googleCalendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${gCalTitle}&dates=${gCalStartTime}/${gCalEndTime}&details=${gCalDetails}`;
 
         // --- 7/a. E-MAIL A VENDÉGNEK ---
         await resend.emails.send({
@@ -165,8 +175,19 @@ export const POST: APIRoute = async ({ request }) => {
                 <p><strong>E-mail cím:</strong> ${email}</p>
               </div>
 
-              <p style="margin-top: 30px;">A foglalás kezeléséhez kattints az alábbi gombra:</p>
-              <a href="${adminLink}" style="display: inline-block; background-color: #db2777; color: white; padding: 12px 25px; text-decoration: none; border-radius: 50px; font-weight: bold;">Admin felület megnyitása</a>
+              <p style="margin-top: 30px; margin-bottom: 20px;">A foglalás kezeléséhez vagy naptárba mentéséhez használd az alábbi gombokat:</p>
+              
+              <div style="display: flex; flex-direction: column; gap: 15px; align-items: flex-start;">
+                <!-- Eredeti Admin gomb -->
+                <a href="${adminLink}" style="display: inline-block; background-color: #db2777; color: white; padding: 12px 25px; text-decoration: none; border-radius: 50px; font-weight: bold; text-align: center;">
+                  Admin felület megnyitása
+                </a>
+                
+                <!-- Új Google Naptár gomb (Másodlagos design, illeszkedik a rózsaszín témához) -->
+                <a href="${googleCalendarUrl}" target="_blank" style="display: inline-block; background-color: #fdf2f8; color: #db2777; border: 2px solid #db2777; padding: 10px 23px; text-decoration: none; border-radius: 50px; font-weight: bold; text-align: center;">
+                  📅 Hozzáadás Google Naptárhoz
+                </a>
+              </div>
             </div>
           `
         });
