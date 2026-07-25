@@ -8,10 +8,8 @@ import { supabase } from '../lib/supabase';
 const { data: settingsData } = await supabase.from('site_settings').select('*');
 const { data: openingHours } = await supabase.from('opening_hours').select('*').order('day_id');
 
-// Lekérjük a rendkívüli lezárt napokat is a dátummal és a hozzájuk tartozó indokkal (reason) együtt
 const { data: closedDatesData } = await supabase.from('closed_dates').select('closed_date, reason');
 
-// Kinyerjük a kapcsolati adatokat
 const email = settingsData?.find(s => s.key === 'contact_email')?.value || "nellirad@gmail.com";
 const phone = settingsData?.find(s => s.key === 'contact_phone')?.value || "+36 30 732 8747";
 const address = settingsData?.find(s => s.key === 'contact_address')?.value || "6728 Szeged, Példa utca 1.";
@@ -20,7 +18,7 @@ const hoursMap = openingHours || [];
 const extraClosedDates = closedDatesData || [];
 ---
 
-<section id="idopont" class="py-24 px-4 bg-white relative scroll-mt-28">
+<section class="py-24 px-4 bg-white relative">
   <div class="max-w-6xl mx-auto">
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-16">
       
@@ -81,7 +79,8 @@ const extraClosedDates = closedDatesData || [];
         </div>
       </div>
 
-      <div class="bg-slate-50 p-8 md:p-12 rounded-[2.5rem] border border-pink-100 shadow-xl relative overflow-hidden">
+      <!-- JAVÍTÁS: id="idopont" átkerült ide, a naptár/foglalási dobozra, így mobilon közvetlenül a naptárra ugrik! -->
+      <div id="idopont" class="bg-slate-50 p-8 md:p-12 rounded-[2.5rem] border border-pink-100 shadow-xl relative overflow-hidden scroll-mt-28">
         
         <form id="booking-form" class="space-y-6" data-hours={JSON.stringify(hoursMap)} data-closed={JSON.stringify(extraClosedDates)}>
           
@@ -141,13 +140,11 @@ const extraClosedDates = closedDatesData || [];
   let bookedDateStrings: string[] = [];
   let fpInstance: any = null;
 
-  // Foglalt időpontok lekérése közvetlenül a DB-ből kapott pontos string formátumban
   async function fetchBookedSlots() {
     try {
       const resp = await fetch('/api/get-slots');
       if (resp.ok) {
         const data = await resp.json();
-        // Pontosan azt tároljuk el stringként, ami a DB-ből jön (pl. "2026-07-29T17:00:00")
         bookedDateStrings = data.map((d: string) => d);
       }
     } catch (e) { 
@@ -155,7 +152,6 @@ const extraClosedDates = closedDatesData || [];
     }
   }
 
-  // Teljesen betelt nap ellenőrzése pontos string egyezéssel
   function isDayFullyBooked(day: Date): boolean {
     const year = day.getFullYear();
     const month = String(day.getMonth() + 1).padStart(2, '0');
@@ -175,9 +171,7 @@ const extraClosedDates = closedDatesData || [];
     const startHour = parseInt(dayConfig.open_time.split(':')[0], 10);
     const endHour = parseInt(dayConfig.close_time.split(':')[0], 10);
     
-    // Kivesszük az erre a napra eső összes foglalt időpontot
     const dayBookings = bookedDateStrings.filter(bStr => bStr.startsWith(selectedISODate));
-
     let availableSlotsCount = 0;
 
     for (let h = startHour; h < endHour; h++) {
@@ -186,17 +180,13 @@ const extraClosedDates = closedDatesData || [];
         const formattedM = m === 0 ? '00' : m.toString();
         const slotString = `${selectedISODate}T${formattedH}:${formattedM}:00`;
 
-        // Ellenőrizzük, hogy ez a slot pontosan egyezik-e valamelyik foglalt időponttal, 
-        // vagy esik bele a 3 órás (6 db harminc perces sáv) tiltott zónába
         let isConflict = false;
-        
         dayBookings.forEach(bStr => {
           const bHour = parseInt(bStr.substring(11, 13), 10);
           const bMin = parseInt(bStr.substring(14, 16), 10);
           const slotTotalMins = h * 60 + m;
           const bTotalMins = bHour * 60 + bMin;
 
-          // 3 óra = 180 perc távolság tiltva
           if (Math.abs(slotTotalMins - bTotalMins) < 180) {
             isConflict = true;
           }
@@ -211,7 +201,6 @@ const extraClosedDates = closedDatesData || [];
     return availableSlotsCount === 0;
   }
 
-  // Idősávok generálása
   function generateSlots(day: Date) {
     if (!slotsDiv || !selectionArea) return;
     
@@ -304,7 +293,6 @@ const extraClosedDates = closedDatesData || [];
             btn.classList.add('bg-pink-600', 'text-white', 'ring-pink-600');
             
             if (finalInput) {
-              // Pontosan azt a stringet adjuk át a DB-nek, amit a gomb tartalmaz, semmilyen óraeltolás nélkül!
               finalInput.value = slotValue;
             }
           };
@@ -313,7 +301,6 @@ const extraClosedDates = closedDatesData || [];
     });
   }
 
-  // Rendszer indítása
   async function start() {
     await fetchBookedSlots();
     
