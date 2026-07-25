@@ -20,7 +20,7 @@ const hoursMap = openingHours || [];
 const extraClosedDates = closedDatesData || [];
 ---
 
-<section id="kapcsolat" class="py-24 px-4 bg-white relative">
+<section id="idopont" class="py-24 px-4 bg-white relative scroll-mt-28">
   <div class="max-w-6xl mx-auto">
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-16">
       
@@ -138,88 +138,161 @@ const extraClosedDates = closedDatesData || [];
   const hoursArray = JSON.parse(form?.dataset.hours || '[]');
   const closedDatesArray = JSON.parse(form?.dataset.closed || '[]'); 
 
-  let bookedTimestamps: number[] = [];
+  let bookedDateStrings: string[] = [];
+  let fpInstance: any = null;
 
-  // Foglalt időpontok lekérése a szerverről
+  // Foglalt időpontok lekérése közvetlenül a DB-ből kapott pontos string formátumban
   async function fetchBookedSlots() {
     try {
       const resp = await fetch('/api/get-slots');
       if (resp.ok) {
         const data = await resp.json();
-        bookedTimestamps = data.map((d: string) => new Date(d).getTime());
+        // Pontosan azt tároljuk el stringként, ami a DB-ből jön (pl. "2026-07-29T17:00:00")
+        bookedDateStrings = data.map((d: string) => d);
       }
     } catch (e) { 
         console.error("Hiba a foglalt időpontok lekérésekor:", e); 
     }
   }
 
-  // Szabad időpont (Óra/Perc) gombok generálása és kattintások kezelése
-  function generateSlots(day: Date) {
-    if (!slotsDiv || !selectionArea) return;
-    
-    slotsDiv.innerHTML = '';
-    
-    // JAVÍTÁS: Időzóna-független, pontos helyi dátum kinyerése (megakadályozza a napok elcsúszását)
+  // Teljesen betelt nap ellenőrzése pontos string egyezéssel
+  function isDayFullyBooked(day: Date): boolean {
     const year = day.getFullYear();
     const month = String(day.getMonth() + 1).padStart(2, '0');
     const date = String(day.getDate()).padStart(2, '0');
     const selectedISODate = `${year}-${month}-${date}`;
     
-    // Megkeressük, van-e rendkívüli zárvatartás erre a konkrét napra
+    const customClosedInfo = closedDatesArray.find((d: any) => d.closed_date === selectedISODate);
+    if (customClosedInfo) return true;
+
+    const jsDay = day.getDay();
+    const dbDayId = jsDay === 0 ? 7 : jsDay;
+    const dbConfig = hoursArray.find((d: any) => d.day_id === dbDayId);
+    const dayConfig = dbConfig || { is_closed: false, open_time: '08:00:00', close_time: '17:00:00' };
+
+    if (dayConfig.is_closed) return true;
+
+    const startHour = parseInt(dayConfig.open_time.split(':')[0], 10);
+    const endHour = parseInt(dayConfig.close_time.split(':')[0], 10);
+    
+    // Kivesszük az erre a napra eső összes foglalt időpontot
+    const dayBookings = bookedDateStrings.filter(bStr => bStr.startsWith(selectedISODate));
+
+    let availableSlotsCount = 0;
+
+    for (let h = startHour; h < endHour; h++) {
+      for (let m = 0; m < 60; m += 30) { 
+        const formattedH = h.toString().padStart(2, '0');
+        const formattedM = m === 0 ? '00' : m.toString();
+        const slotString = `${selectedISODate}T${formattedH}:${formattedM}:00`;
+
+        // Ellenőrizzük, hogy ez a slot pontosan egyezik-e valamelyik foglalt időponttal, 
+        // vagy esik bele a 3 órás (6 db harminc perces sáv) tiltott zónába
+        let isConflict = false;
+        
+        dayBookings.forEach(bStr => {
+          const bHour = parseInt(bStr.substring(11, 13), 10);
+          const bMin = parseInt(bStr.substring(14, 16), 10);
+          const slotTotalMins = h * 60 + m;
+          const bTotalMins = bHour * 60 + bMin;
+
+          // 3 óra = 180 perc távolság tiltva
+          if (Math.abs(slotTotalMins - bTotalMins) < 180) {
+            isConflict = true;
+          }
+        });
+
+        if (!isConflict) {
+            availableSlotsCount++;
+        }
+      }
+    }
+
+    return availableSlotsCount === 0;
+  }
+
+  // Idősávok generálása
+  function generateSlots(day: Date) {
+    if (!slotsDiv || !selectionArea) return;
+    
+    slotsDiv.innerHTML = '';
+    
+    const year = day.getFullYear();
+    const month = String(day.getMonth() + 1).padStart(2, '0');
+    const date = String(day.getDate()).padStart(2, '0');
+    const selectedISODate = `${year}-${month}-${date}`;
+    
     const customClosedInfo = closedDatesArray.find((d: any) => d.closed_date === selectedISODate);
     
-    // BÁRMILYEN ESZKÖZÖN (Mobil/PC) is kattintanak rá, kiírjuk az okot!
     if (customClosedInfo) {
         const reasonText = customClosedInfo.reason ? `: ${customClosedInfo.reason}` : '';
-        slotsDiv.innerHTML = `<p class="col-span-4 text-center text-red-500 py-6 bg-red-50 rounded-2xl border border-red-100 italic text-sm font-semibold shadow-inner">Ezen a napon zárva tartok${reasonText}.</p>`;
+        slotsDiv.innerHTML = `<p class="col-span-4 text-center text-red-500 py-6 bg-red-50 rounded-2xl border border-red-100 italic text-sm font-semibold shadow-inner">Ezen a napon zárva tartunk${reasonText}.</p>`;
         selectionArea.classList.remove('hidden');
         return;
     }
 
     const jsDay = day.getDay();
     const dbDayId = jsDay === 0 ? 7 : jsDay;
-    
     const dbConfig = hoursArray.find((d: any) => d.day_id === dbDayId);
     const dayConfig = dbConfig || { is_closed: false, open_time: '08:00:00', close_time: '17:00:00' };
 
     if (dayConfig.is_closed) {
-        slotsDiv.innerHTML = '<p class="col-span-4 text-center text-slate-400 py-6 bg-slate-50 rounded-2xl italic text-sm">Ezen a napon zárva tartok.</p>';
+        slotsDiv.innerHTML = '<p class="col-span-4 text-center text-red-500 py-6 bg-red-50 rounded-2xl border border-red-100 italic text-sm font-semibold shadow-inner">Ezen a napon zárva tartunk.</p>';
         selectionArea.classList.remove('hidden');
         return;
     }
 
     selectionArea.classList.remove('hidden');
-    const now = new Date();
 
     const startHour = parseInt(dayConfig.open_time.split(':')[0], 10);
     const endHour = parseInt(dayConfig.close_time.split(':')[0], 10);
     
-    const threeHoursInMs = 3 * 60 * 60 * 1000;
-    let hasAvailableSlot = false;
+    const dayBookings = bookedDateStrings.filter(bStr => bStr.startsWith(selectedISODate));
+    
+    let availableSlotsCount = 0;
+    const tempSlots: { slotValue: string, formattedText: string, isBlocked: boolean }[] = [];
 
     for (let h = startHour; h < endHour; h++) {
       for (let m = 0; m < 60; m += 30) { 
+        const formattedH = h.toString().padStart(2, '0');
+        const formattedM = m === 0 ? '00' : m.toString();
+        const slotValue = `${selectedISODate}T${formattedH}:${formattedM}:00`;
+
+        let isConflict = false;
+        dayBookings.forEach(bStr => {
+          const bHour = parseInt(bStr.substring(11, 13), 10);
+          const bMin = parseInt(bStr.substring(14, 16), 10);
+          const slotTotalMins = h * 60 + m;
+          const bTotalMins = bHour * 60 + bMin;
+
+          if (Math.abs(slotTotalMins - bTotalMins) < 180) {
+            isConflict = true;
+          }
+        });
+
+        const isBlocked = isConflict;
         
-        const slotDate = new Date(day);
-        slotDate.setHours(h, m, 0, 0);
-        const slotTime = slotDate.getTime();
+        if (!isBlocked) {
+            availableSlotsCount++;
+        }
+        tempSlots.push({ slotValue, formattedText: `${formattedH}:${formattedM}`, isBlocked });
+      }
+    }
 
-        const isPast = slotDate < now;
-        const isConflict = bookedTimestamps.some(bookedTime => Math.abs(slotTime - bookedTime) < threeHoursInMs);
-        const isBlocked = isPast || isConflict;
+    if (availableSlotsCount === 0) {
+        slotsDiv.innerHTML = '<p class="col-span-4 text-center text-red-500 py-6 bg-red-50 rounded-2xl border border-red-100 italic text-sm font-semibold shadow-inner">Erre a napra már minden időpont betelt.</p>';
+        return;
+    }
 
+    tempSlots.forEach(({ slotValue, formattedText, isBlocked }) => {
         const btn = document.createElement('button');
         btn.type = 'button';
-        
-        const formattedHour = h.toString().padStart(2, '0');
-        const formattedMin = m === 0 ? '00' : m.toString();
-        btn.textContent = `${formattedHour}:${formattedMin}`;
+        btn.textContent = formattedText;
         
         if (isBlocked) {
           btn.disabled = true;
           btn.className = "p-2 rounded-xl bg-slate-100 text-slate-300 cursor-not-allowed text-[10px] opacity-50 line-through";
         } else {
-          hasAvailableSlot = true;
           btn.className = "time-btn p-2 rounded-xl bg-white text-slate-700 ring-1 ring-slate-100 text-xs font-bold hover:bg-pink-50 transition-all";
           
           btn.onclick = () => {
@@ -231,31 +304,25 @@ const extraClosedDates = closedDatesData || [];
             btn.classList.add('bg-pink-600', 'text-white', 'ring-pink-600');
             
             if (finalInput) {
-              const offset = slotDate.getTimezoneOffset() * 60000;
-              finalInput.value = new Date(slotDate.getTime() - offset).toISOString().slice(0, 16);
+              // Pontosan azt a stringet adjuk át a DB-nek, amit a gomb tartalmaz, semmilyen óraeltolás nélkül!
+              finalInput.value = slotValue;
             }
           };
         }
-        
         slotsDiv.appendChild(btn);
-      }
-    }
-
-    if (!hasAvailableSlot) {
-        slotsDiv.innerHTML = '<p class="col-span-4 text-center text-slate-400 py-6 bg-slate-50 rounded-2xl italic text-sm">Erre a napra már minden időpont betelt.</p>';
-    }
+    });
   }
 
-  // RENDSZER INDÍTÁSA
+  // Rendszer indítása
   async function start() {
     await fetchBookedSlots();
     
     const today = new Date();
     const minAllowedDate = new Date(today);
-    minAllowedDate.setDate(today.getDate() + 2); // Ma és holnap letiltva
+    minAllowedDate.setDate(today.getDate() + 2);
 
     // @ts-ignore
-    flatpickr("#inline-calendar", {
+    fpInstance = flatpickr("#inline-calendar", {
       inline: true,
       appendTo: document.getElementById('calendar-container'),
       locale: hu,
@@ -268,10 +335,12 @@ const extraClosedDates = closedDatesData || [];
         const localDay = String(dayElem.dateObj.getDate()).padStart(2, '0');
         const dateISO = `${localYear}-${localMonth}-${localDay}`;
 
-        const match = closedDatesArray.find((d: any) => d.closed_date === dateISO);
+        const matchClosed = closedDatesArray.find((d: any) => d.closed_date === dateISO);
         
-        if (match) {
+        if (matchClosed) {
           dayElem.classList.add('custom-closed-day');
+        } else if (isDayFullyBooked(dayElem.dateObj)) {
+          dayElem.classList.add('custom-fully-booked-day');
         }
       },
       onChange: (selectedDates: Date[]) => {
@@ -282,13 +351,11 @@ const extraClosedDates = closedDatesData || [];
 
   start();
 
-  // --- VALÓS IDEJŰ BEMENET SZŰRÉS (Név és Telefon) ---
   const nameInput = document.querySelector('input[name="name"]') as HTMLInputElement;
   const phoneInput = document.querySelector('input[name="phone"]') as HTMLInputElement;
 
   if (nameInput) {
     nameInput.addEventListener('input', (e) => {
-      // Eltávolít minden számot a név mezőből gépelés közben
       const target = e.target as HTMLInputElement;
       target.value = target.value.replace(/[0-9]/g, '');
     });
@@ -296,14 +363,11 @@ const extraClosedDates = closedDatesData || [];
 
   if (phoneInput) {
     phoneInput.addEventListener('input', (e) => {
-      // Csak számokat, + jelet, szóközt és kötőjelet enged a telefon mezőbe
       const target = e.target as HTMLInputElement;
       target.value = target.value.replace(/[^\+0-9\s\-]/g, '');
     });
   }
-  // ---------------------------------------------
 
-  // FORM BEKÜLDÉSE (FOGLALÁS)
   if (form && submitBtn) {
     form.onsubmit = async (e) => {
       e.preventDefault();
@@ -311,7 +375,6 @@ const extraClosedDates = closedDatesData || [];
       const statusCont = document.getElementById('status-container');
       const btnSpan = submitBtn.querySelector('span');
 
-      // Véglegesítés ellenőrzése
       if (!finalInput?.value) {
           alert("Kérlek, válassz ki egy szabad időpontot a naptárban!");
           return;
@@ -337,7 +400,9 @@ const extraClosedDates = closedDatesData || [];
             statusCont.textContent = "Sikeres foglalás! E-mailben küldtük a visszaigazoló linket.";
             form.reset();
             selectionArea?.classList.add('hidden');
+            
             await fetchBookedSlots();
+            if (fpInstance) fpInstance.redraw();
           } else {
             const r = await res.json();
             statusCont.className = "mt-6 p-6 bg-red-50 text-red-700 rounded-3xl border border-red-200";
@@ -355,23 +420,17 @@ const extraClosedDates = closedDatesData || [];
 </script>
 
 <style>
-  /* A naptár dizájnjának finomhangolása */
   :global(.flatpickr-calendar) { box-shadow: none !important; border: none !important; width: 100% !important; background: transparent !important; }
-  
-  /* A kiválasztott (kattintott) nap stílusa */
   :global(.flatpickr-day.selected) { background: #db2777 !important; border-color: #db2777 !important; border-radius: 12px !important; color: white !important;}
   
-  /* MOBILBARÁT MEGOLDÁS: A lezárt napok áthúzottnak, pirosasnak és halványnak látszanak, 
-     de nincsenek letiltva, így ha az ügyfél rányom, meglátja a piros figyelmeztetést! */
-  :global(.custom-closed-day) { 
-      color: #ef4444 !important; /* Piros szöveg */
-      text-decoration: line-through !important; /* Áthúzott */
-      background-color: #fef2f2 !important; /* Halvány piros háttér */
+  :global(.custom-closed-day), :global(.custom-fully-booked-day) { 
+      color: #ef4444 !important;
+      text-decoration: line-through !important;
+      background-color: #fef2f2 !important;
       border-radius: 12px !important;
   }
   
-  /* Ha a vendég mégis rákattint egy lezárt napra (aktívvá teszi), akkor feltűnőbb piros lesz */
-  :global(.custom-closed-day.selected) {
+  :global(.custom-closed-day.selected), :global(.custom-fully-booked-day.selected) {
       background-color: #ef4444 !important; 
       color: white !important;
       border-color: #ef4444 !important;

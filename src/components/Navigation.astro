@@ -8,15 +8,13 @@
       Nails<span class="text-pink-500 group-hover:text-pink-600 transition-colors">by</span>Nelly
     </a>
 
-    <!-- Asztali (Desktop) menü -->
     <div class="hidden md:flex space-x-8 items-center font-sans text-xs font-bold uppercase tracking-[0.2em] text-slate-500">
       <a href="/#top" aria-label="Kezdőlap" class="hover:text-pink-600 transition-colors">Kezdőlap</a>
       <a href="/#munkak" aria-label="Műköröm és gél lakk referenciák" class="hover:text-pink-600 transition-colors">Műköröm Galéria</a>
       <a href="/#arak" aria-label="Műköröm építés és gél lakk árak" class="hover:text-pink-600 transition-colors">Árak</a>
-      <a href="/#kapcsolat" aria-label="Online időpontfoglalás a szalonba" class="bg-pink-600 text-white px-6 py-3 rounded-2xl hover:bg-pink-700 hover:shadow-lg hover:shadow-pink-200 transition-all active:scale-95">Időpont</a>
+      <a href="/#idopont" aria-label="Online időpontfoglalás a szalonba" class="bg-pink-600 text-white px-6 py-3 rounded-2xl hover:bg-pink-700 hover:shadow-lg hover:shadow-pink-200 transition-all active:scale-95">Időpont</a>
     </div>
 
-    <!-- Mobil menü nyitó gombja -->
     <button id="mobile-menu-btn" class="md:hidden text-slate-600 p-2 focus:outline-hidden cursor-pointer" aria-label="Menü megnyitása" aria-expanded="false" aria-controls="mobile-menu">
         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"/>
@@ -24,13 +22,12 @@
     </button>
   </div>
 
-  <!-- Lenyíló mobil menü (Alapból rejtett) -->
   <div id="mobile-menu" class="hidden md:hidden absolute top-full left-4 right-4 mt-2 bg-white/95 backdrop-blur-xl border border-slate-100 rounded-3xl shadow-xl overflow-hidden transition-all duration-300">
     <div class="flex flex-col px-6 py-6 space-y-6 font-sans text-xs font-bold uppercase tracking-[0.2em] text-slate-500 text-center">
       <a href="/#top" class="mobile-link hover:text-pink-600 transition-colors">Kezdőlap</a>
       <a href="/#munkak" class="mobile-link hover:text-pink-600 transition-colors">Műköröm Galéria</a>
       <a href="/#arak" class="mobile-link hover:text-pink-600 transition-colors">Árak</a>
-      <a href="/#kapcsolat" class="mobile-link inline-block mx-auto bg-pink-600 text-white px-8 py-4 rounded-2xl hover:bg-pink-700 transition-all">Időpont</a>
+      <a href="/#idopont" class="mobile-link inline-block mx-auto bg-pink-600 text-white px-8 py-4 rounded-2xl hover:bg-pink-700 transition-all">Időpont</a>
     </div>
   </div>
 </nav>
@@ -42,14 +39,12 @@
     const links = document.querySelectorAll('.mobile-link');
 
     if (btn && menu) {
-      // Nyitás - Zárás kattintásra
       btn.addEventListener('click', () => {
         menu.classList.toggle('hidden');
         const isExpanded = btn.getAttribute('aria-expanded') === 'true';
         btn.setAttribute('aria-expanded', String(!isExpanded));
       });
 
-      // Ha egy linkre kattintanak mobilon, a menü csukódjon be automatikusan
       links.forEach(link => {
         link.addEventListener('click', () => {
           menu.classList.add('hidden');
@@ -59,7 +54,6 @@
     }
   }
 
-  // Astro támogatás, hogy oldalváltások után is működjön
   document.addEventListener('DOMContentLoaded', initNavigation);
   document.addEventListener('astro:page-load', initNavigation);
 </script>
