@@ -7,8 +7,13 @@ import { supabase } from '../lib/supabase';
 // ==========================================
 const { data: settingsData } = await supabase.from('site_settings').select('*');
 const { data: openingHours } = await supabase.from('opening_hours').select('*').order('day_id');
-
 const { data: closedDatesData } = await supabase.from('closed_dates').select('closed_date, reason');
+
+// Árak és szolgáltatások lekérése kategóriák szerint a prices és price_categories táblákból
+const { data: categoriesData } = await supabase
+  .from('price_categories')
+  .select('id, name, display_order, prices(id, service_name, description, price_value, duration_minutes)')
+  .order('display_order', { ascending: true });
 
 const email = settingsData?.find(s => s.key === 'contact_email')?.value || "nellirad@gmail.com";
 const phone = settingsData?.find(s => s.key === 'contact_phone')?.value || "+36 30 732 8747";
@@ -16,12 +21,18 @@ const address = settingsData?.find(s => s.key === 'contact_address')?.value || "
 
 const hoursMap = openingHours || [];
 const extraClosedDates = closedDatesData || [];
+const categoriesWithPrices = categoriesData || [];
+
+const allPricesFlattened = categoriesWithPrices.flatMap(cat => 
+  (cat.prices || []).map(p => ({ ...p, category_name: cat.name }))
+);
 ---
 
 <section class="py-24 px-4 bg-white relative">
   <div class="max-w-6xl mx-auto">
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-16">
       
+      <!-- Bal oldali oszlop: Elérhetőségek és Nyitvatartás -->
       <div class="space-y-12">
         <div>
           <h2 class="text-4xl font-serif font-bold text-slate-900 mb-6 tracking-tight">Kapcsolat</h2>
@@ -79,26 +90,53 @@ const extraClosedDates = closedDatesData || [];
         </div>
       </div>
 
-      <!-- JAVÍTÁS: id="idopont" átkerült ide, a naptár/foglalási dobozra, így mobilon közvetlenül a naptárra ugrik! -->
+      <!-- Jobb oldali oszlop: Foglalási űrlap -->
       <div id="idopont" class="bg-slate-50 p-8 md:p-12 rounded-[2.5rem] border border-pink-100 shadow-xl relative overflow-hidden scroll-mt-28">
         
-        <form id="booking-form" class="space-y-6" data-hours={JSON.stringify(hoursMap)} data-closed={JSON.stringify(extraClosedDates)}>
+        <form id="booking-form" class="space-y-6" data-hours={JSON.stringify(hoursMap)} data-closed={JSON.stringify(extraClosedDates)} data-prices={JSON.stringify(allPricesFlattened)}>
           
           <div class="space-y-4">
+            <!-- Szolgáltatás legördülő lista -->
+            <div>
+              <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Milyen körmöt szeretnél? *</label>
+              <select name="service_id" id="service-select" required class="w-full p-4 mt-1 rounded-2xl bg-white border-none ring-1 ring-slate-200 focus:ring-2 focus:ring-pink-500 outline-none transition-all shadow-sm text-slate-700 font-medium cursor-pointer">
+                <option value="" disabled selected>Válassz szolgáltatást...</option>
+                {categoriesWithPrices.map((cat: any) => (
+                  <optgroup label={cat.name}>
+                    {cat.prices && cat.prices.map((service: any) => (
+                      <option value={service.id} data-duration={service.duration_minutes || 60}>
+                        {service.service_name} ({service.duration_minutes || 60} perc - {service.price_value} Ft)
+                      </option>
+                    ))}
+                  </optgroup>
+                ))}
+              </select>
+            </div>
+
             <input type="text" name="name" required placeholder="Teljes név" pattern="^[a-zA-ZáéíóöőúüűÁÉÍÓÖŐÚÜŰ\-\.\s]+$" title="Kérlek, csak betűket adj meg a névhez!" class="w-full p-4 rounded-2xl bg-white border-none ring-1 ring-slate-200 focus:ring-2 focus:ring-pink-500 outline-none transition-all shadow-sm" />
+            
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
               <input type="email" name="email" required placeholder="E-mail" pattern="[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$" title="Kérlek, érvényes e-mail címet adj meg (pl. pelda@email.hu)!" class="w-full p-4 rounded-2xl bg-white border-none ring-1 ring-slate-200 focus:ring-2 focus:ring-pink-500 transition-all shadow-sm" />
               <input type="tel" name="phone" required placeholder="Telefon" pattern="^[\+0-9\s\-]+$" minlength="8" title="Kérlek, csak számokat (és '+' jelet) adj meg a telefonszámhoz!" class="w-full p-4 rounded-2xl bg-white border-none ring-1 ring-slate-200 focus:ring-2 focus:ring-pink-500 transition-all shadow-sm" />
             </div>
           </div>
 
+          <!-- Naptár konténer (kezdetben lezárva / figyelmeztető üzenettel) -->
           <div class="space-y-4">
             <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">1. Nap kiválasztása</label>
-            <div id="calendar-container" class="rounded-3xl overflow-hidden shadow-inner ring-1 ring-slate-200 bg-white p-2 min-h-75">
+            
+            <!-- Figyelmeztető sáv, ha még nincs kiválasztva szolgáltatás -->
+            <div id="calendar-warning" class="p-6 bg-pink-50 text-pink-600 rounded-3xl border border-pink-200 text-center text-sm font-bold shadow-inner">
+              ✨ Kérlek, először <strong>válassz szolgáltatást</strong> a fenti menüből a naptár megtekintéséhez!
+            </div>
+
+            <!-- Naptár (kezdetben rejtve) -->
+            <div id="calendar-container" class="rounded-3xl overflow-hidden shadow-inner ring-1 ring-slate-200 bg-white p-2 min-h-75 hidden">
                 <input type="text" id="inline-calendar" required class="hidden" />
             </div>
           </div>
 
+          <!-- Idősávok konténer (alapból rejtett) -->
           <div id="time-selection" class="space-y-4 hidden">
             <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">2. Szabad időpontok</label>
             
@@ -133,23 +171,34 @@ const extraClosedDates = closedDatesData || [];
   const selectionArea = document.getElementById('time-selection');
   const finalInput = document.getElementById('final-date-input') as HTMLInputElement | null;
   const submitBtn = document.getElementById('submit-btn') as HTMLButtonElement | null;
+  const serviceSelect = document.getElementById('service-select') as HTMLSelectElement | null;
+  const calendarWarning = document.getElementById('calendar-warning');
+  const calendarContainer = document.getElementById('calendar-container');
 
   const hoursArray = JSON.parse(form?.dataset.hours || '[]');
   const closedDatesArray = JSON.parse(form?.dataset.closed || '[]'); 
 
   let bookedDateStrings: string[] = [];
   let fpInstance: any = null;
+  let selectedDateObj: Date | null = null;
 
   async function fetchBookedSlots() {
     try {
       const resp = await fetch('/api/get-slots');
       if (resp.ok) {
         const data = await resp.json();
-        bookedDateStrings = data.map((d: string) => d);
+        // Levágjuk az időzóna jelölést a biztonságos összehasonlításhoz
+        bookedDateStrings = data.map((d: string) => d.replace(/([+-]\d{2}:\d{2}|Z)$/, ''));
       }
     } catch (e) { 
         console.error("Hiba a foglalt időpontok lekérésekor:", e); 
     }
+  }
+
+  function getSelectedDuration(): number {
+    if (!serviceSelect || !serviceSelect.value) return 60;
+    const selectedOption = serviceSelect.options[serviceSelect.selectedIndex];
+    return parseInt(selectedOption.dataset.duration || '60', 10);
   }
 
   function isDayFullyBooked(day: Date): boolean {
@@ -164,37 +213,43 @@ const extraClosedDates = closedDatesData || [];
     const jsDay = day.getDay();
     const dbDayId = jsDay === 0 ? 7 : jsDay;
     const dbConfig = hoursArray.find((d: any) => d.day_id === dbDayId);
-    const dayConfig = dbConfig || { is_closed: false, open_time: '08:00:00', close_time: '17:00:00' };
+    const dayConfig = dbConfig || { is_closed: false, open_time: '15:30:00', close_time: '17:00:00' };
 
     if (dayConfig.is_closed) return true;
 
-    const startHour = parseInt(dayConfig.open_time.split(':')[0], 10);
-    const endHour = parseInt(dayConfig.close_time.split(':')[0], 10);
-    
     const dayBookings = bookedDateStrings.filter(bStr => bStr.startsWith(selectedISODate));
+
+    const startHour = parseInt(dayConfig.open_time.split(':')[0], 10);
+    const startMin = parseInt(dayConfig.open_time.split(':')[1], 10);
+    const endHour = parseInt(dayConfig.close_time.split(':')[0], 10);
+    const endMin = parseInt(dayConfig.close_time.split(':')[1], 10);
+    
+    const openTotalMins = startHour * 60 + startMin;
+    const closeTotalMins = endHour * 60 + endMin;
+    const durationMins = getSelectedDuration();
+
     let availableSlotsCount = 0;
 
-    for (let h = startHour; h < endHour; h++) {
-      for (let m = 0; m < 60; m += 30) { 
-        const formattedH = h.toString().padStart(2, '0');
-        const formattedM = m === 0 ? '00' : m.toString();
-        const slotString = `${selectedISODate}T${formattedH}:${formattedM}:00`;
+    for (let slotMins = openTotalMins; slotMins <= closeTotalMins; slotMins += 30) {
+      let isConflict = false;
 
-        let isConflict = false;
-        dayBookings.forEach(bStr => {
-          const bHour = parseInt(bStr.substring(11, 13), 10);
-          const bMin = parseInt(bStr.substring(14, 16), 10);
-          const slotTotalMins = h * 60 + m;
-          const bTotalMins = bHour * 60 + bMin;
+      if (dayBookings.length === 0) {
+        availableSlotsCount++;
+        continue;
+      }
 
-          if (Math.abs(slotTotalMins - bTotalMins) < 180) {
-            isConflict = true;
-          }
-        });
+      dayBookings.forEach(bStr => {
+        const bHour = parseInt(bStr.substring(11, 13), 10);
+        const bMin = parseInt(bStr.substring(14, 16), 10);
+        const bTotalMins = bHour * 60 + bMin;
 
-        if (!isConflict) {
-            availableSlotsCount++;
+        if (Math.abs(slotMins - bTotalMins) < durationMins) {
+          isConflict = true;
         }
+      });
+
+      if (!isConflict) {
+        availableSlotsCount++;
       }
     }
 
@@ -223,7 +278,7 @@ const extraClosedDates = closedDatesData || [];
     const jsDay = day.getDay();
     const dbDayId = jsDay === 0 ? 7 : jsDay;
     const dbConfig = hoursArray.find((d: any) => d.day_id === dbDayId);
-    const dayConfig = dbConfig || { is_closed: false, open_time: '08:00:00', close_time: '17:00:00' };
+    const dayConfig = dbConfig || { is_closed: false, open_time: '15:30:00', close_time: '17:00:00' };
 
     if (dayConfig.is_closed) {
         slotsDiv.innerHTML = '<p class="col-span-4 text-center text-red-500 py-6 bg-red-50 rounded-2xl border border-red-100 italic text-sm font-semibold shadow-inner">Ezen a napon zárva tartunk.</p>';
@@ -234,38 +289,43 @@ const extraClosedDates = closedDatesData || [];
     selectionArea.classList.remove('hidden');
 
     const startHour = parseInt(dayConfig.open_time.split(':')[0], 10);
+    const startMin = parseInt(dayConfig.open_time.split(':')[1], 10);
     const endHour = parseInt(dayConfig.close_time.split(':')[0], 10);
+    const endMin = parseInt(dayConfig.close_time.split(':')[1], 10);
+    
+    const openTotalMins = startHour * 60 + startMin;
+    const closeTotalMins = endHour * 60 + endMin;
+    const durationMins = getSelectedDuration();
     
     const dayBookings = bookedDateStrings.filter(bStr => bStr.startsWith(selectedISODate));
     
     let availableSlotsCount = 0;
     const tempSlots: { slotValue: string, formattedText: string, isBlocked: boolean }[] = [];
 
-    for (let h = startHour; h < endHour; h++) {
-      for (let m = 0; m < 60; m += 30) { 
-        const formattedH = h.toString().padStart(2, '0');
-        const formattedM = m === 0 ? '00' : m.toString();
-        const slotValue = `${selectedISODate}T${formattedH}:${formattedM}:00`;
+    for (let slotMins = openTotalMins; slotMins <= closeTotalMins; slotMins += 30) {
+      const h = Math.floor(slotMins / 60);
+      const m = slotMins % 60;
 
-        let isConflict = false;
-        dayBookings.forEach(bStr => {
-          const bHour = parseInt(bStr.substring(11, 13), 10);
-          const bMin = parseInt(bStr.substring(14, 16), 10);
-          const slotTotalMins = h * 60 + m;
-          const bTotalMins = bHour * 60 + bMin;
+      const formattedH = h.toString().padStart(2, '0');
+      const formattedM = m === 0 ? '00' : m.toString();
+      const slotValue = `${selectedISODate}T${formattedH}:${formattedM}:00`;
 
-          if (Math.abs(slotTotalMins - bTotalMins) < 180) {
-            isConflict = true;
-          }
-        });
+      let isConflict = false;
 
-        const isBlocked = isConflict;
-        
-        if (!isBlocked) {
-            availableSlotsCount++;
+      dayBookings.forEach(bStr => {
+        const bHour = parseInt(bStr.substring(11, 13), 10);
+        const bMin = parseInt(bStr.substring(14, 16), 10);
+        const bTotalMins = bHour * 60 + bMin;
+
+        if (Math.abs(slotMins - bTotalMins) < durationMins) {
+          isConflict = true;
         }
-        tempSlots.push({ slotValue, formattedText: `${formattedH}:${formattedM}`, isBlocked });
+      });
+
+      if (!isConflict) {
+        availableSlotsCount++;
       }
+      tempSlots.push({ slotValue, formattedText: `${formattedH}:${formattedM}`, isBlocked: isConflict });
     }
 
     if (availableSlotsCount === 0) {
@@ -301,7 +361,7 @@ const extraClosedDates = closedDatesData || [];
     });
   }
 
-  async function start() {
+  async function initCalendar() {
     await fetchBookedSlots();
     
     const today = new Date();
@@ -331,12 +391,32 @@ const extraClosedDates = closedDatesData || [];
         }
       },
       onChange: (selectedDates: Date[]) => {
-        if (selectedDates.length > 0) generateSlots(selectedDates[0]);
+        if (selectedDates.length > 0) {
+          selectedDateObj = selectedDates[0];
+          generateSlots(selectedDateObj);
+        }
       }
     });
   }
 
-  start();
+  // Ha a felhasználó kiválaszt egy szolgáltatást, feloldjuk a naptárat
+  if (serviceSelect) {
+    serviceSelect.addEventListener('change', async () => {
+      if (serviceSelect.value) {
+        if (calendarWarning) calendarWarning.classList.add('hidden');
+        if (calendarContainer) calendarContainer.classList.remove('hidden');
+
+        if (!fpInstance) {
+          await initCalendar();
+        } else {
+          fpInstance.redraw();
+          if (selectedDateObj) {
+            generateSlots(selectedDateObj);
+          }
+        }
+      }
+    });
+  }
 
   const nameInput = document.querySelector('input[name="name"]') as HTMLInputElement;
   const phoneInput = document.querySelector('input[name="phone"]') as HTMLInputElement;
@@ -361,6 +441,11 @@ const extraClosedDates = closedDatesData || [];
       
       const statusCont = document.getElementById('status-container');
       const btnSpan = submitBtn.querySelector('span');
+
+      if (!serviceSelect?.value) {
+          alert("Kérlek, először válassz ki egy szolgáltatást!");
+          return;
+      }
 
       if (!finalInput?.value) {
           alert("Kérlek, válassz ki egy szabad időpontot a naptárban!");
@@ -387,6 +472,8 @@ const extraClosedDates = closedDatesData || [];
             statusCont.textContent = "Sikeres foglalás! E-mailben küldtük a visszaigazoló linket.";
             form.reset();
             selectionArea?.classList.add('hidden');
+            if (calendarContainer) calendarContainer.classList.add('hidden');
+            if (calendarWarning) calendarWarning.classList.remove('hidden');
             
             await fetchBookedSlots();
             if (fpInstance) fpInstance.redraw();

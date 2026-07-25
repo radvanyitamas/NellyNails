@@ -6,7 +6,6 @@ import { Resend } from 'resend';
 import { getEmailHtml } from '../../lib/emailTemplate'; 
 import { supabase } from '../../lib/supabase'; 
 
-// Értékes API kulcs beolvasása a környezeti változókból
 const apiKey = import.meta.env.RESEND_API_KEY;
 const resend = apiKey ? new Resend(apiKey) : null;
 
@@ -16,7 +15,7 @@ const resend = apiKey ? new Resend(apiKey) : null;
 export const POST: APIRoute = async ({ request }) => {
   try {
     const contentType = request.headers.get('content-type');
-    let name, email, phone, dateStr;
+    let name, email, phone, dateStr, serviceId;
 
     // ==========================================
     // 3. ADATOK KINYERÉSE A KÉRÉSBŐL
@@ -27,12 +26,14 @@ export const POST: APIRoute = async ({ request }) => {
       email = body.email;
       phone = body.phone;
       dateStr = body.date || body.booking_date; 
+      serviceId = body.service_id; // Új: a prices tábla ID-ja
     } else {
       const data = await request.formData();
       name = data.get('name')?.toString();
       email = data.get('email')?.toString();
       phone = data.get('phone')?.toString();
       dateStr = data.get('date')?.toString();
+      serviceId = data.get('service_id')?.toString();
     }
 
     // ==========================================
@@ -48,7 +49,6 @@ export const POST: APIRoute = async ({ request }) => {
     const requestedDate = new Date(dateStr);
     const now = new Date(); 
 
-    // Múltbéli időpont kiszűrése
     if (requestedDate < now) {
       return new Response(JSON.stringify({ error: "Nem foglalhatsz múltbéli időpontot!" }), {
         status: 400,
@@ -59,10 +59,8 @@ export const POST: APIRoute = async ({ request }) => {
     // ==========================================
     // 4/b. RENDKÍVÜLI ZÁRVATARTÁS ELLENŐRZÉSE
     // ==========================================
-    // Átalakítjuk a kért napot tiszta YYYY-MM-DD formátumra
     const inputDateISO = requestedDate.toISOString().split('T')[0];
 
-    // Megnézzük, Nelly lezárta-e ezt a napot a naptárban
     const { data: isClosedDay } = await supabase
       .from('closed_dates')
       .select('reason')
@@ -77,29 +75,68 @@ export const POST: APIRoute = async ({ request }) => {
     }
 
     // ==========================================
-    // 5. ÜTKÖZÉSVIZSGÁLAT (3 ÓRÁS SZABÁLY)
+    // 4/c. SZOLGÁLTATÁS ÉS IDŐTARTAM LEKÉRÉSE A PRICES TÁBLÁBÓL
     // ==========================================
-    const threeHoursInMs = 3 * 60 * 60 * 1000;
-    const minTime = new Date(requestedDate.getTime() - threeHoursInMs).toISOString();
-    const maxTime = new Date(requestedDate.getTime() + threeHoursInMs).toISOString();
+    let durationMinutes = 180; // Alapértelmezett 3 óra
 
-    const { data: conflict } = await supabase
+    if (serviceId) {
+      const { data: serviceData } = await supabase
+        .from('prices')
+        .select('duration_minutes')
+        .eq('id', serviceId)
+        .maybeSingle();
+
+      if (serviceData && serviceData.duration_minutes) {
+        durationMinutes = serviceData.duration_minutes;
+      }
+    }
+
+    // ==========================================
+    // 5. ÜTKÖZÉSVIZSGÁLAT (DINAMIKUS IDŐTARTAM ALAPJÁN)
+    // ==========================================
+    const durationMs = durationMinutes * 60 * 1000;
+    const requestedTime = requestedDate.getTime();
+    const requestedEndTime = requestedTime + durationMs;
+
+    // Lekérjük az adott nap összes aktív foglalását, hogy pontosan vizsgálhassuk az átfedéseket
+    const startOfDay = new Date(requestedDate);
+    startOfDay.setHours(0, 0, 0, 0);
+    const endOfDay = new Date(requestedDate);
+    endOfDay.setHours(23, 59, 59, 999);
+
+    const { data: existingBookings } = await supabase
       .from('bookings')
-      .select('id')
-      .or('status.eq.confirmed,status.eq.pending') 
-      .gt('booking_date', minTime) 
-      .lt('booking_date', maxTime) 
-      .maybeSingle(); 
+      .select('booking_date, prices(duration_minutes)')
+      .or('status.eq.confirmed,status.eq.pending')
+      .gte('booking_date', startOfDay.toISOString())
+      .lte('booking_date', endOfDay.toISOString());
 
-    if (conflict) {
-      return new Response(JSON.stringify({ error: "Ez az időpont már foglalt!" }), { 
+    let hasConflict = false;
+
+    if (existingBookings) {
+      for (const booking of existingBookings) {
+        const bookedStart = new Date(booking.booking_date).getTime();
+        // Ha a meglévő foglaláshoz tartozik duration, azt vesszük, különben 180 percet
+        const bookedDuration = (booking.prices as any)?.duration_minutes || 180;
+        const bookedEnd = bookedStart + (bookedDuration * 60 * 1000);
+
+        // Átfedés vizsgálat: (StartA < EndB) és (EndA > StartB)
+        if (requestedTime < bookedEnd && requestedEndTime > bookedStart) {
+          hasConflict = true;
+          break;
+        }
+      }
+    }
+
+    if (hasConflict) {
+      return new Response(JSON.stringify({ error: "Ez az időpont már ütközik egy másik foglalással!" }), { 
         status: 400,
         headers: { 'Content-Type': 'application/json' }
       });
     }
 
     // ==========================================
-    // 6. ADATBÁZIS MENTÉS
+    // 6. ADATBÁZIS MENTÉS (price_id-val)
     // ==========================================
     const { data: booking, error: dbError } = await supabase
       .from('bookings')
@@ -108,7 +145,8 @@ export const POST: APIRoute = async ({ request }) => {
         email, 
         phone, 
         booking_date: requestedDate.toISOString(), 
-        status: 'pending'
+        status: 'pending',
+        price_id: serviceId || null // Rögzítjük a prices tábla ID-ját
       }])
       .select().single(); 
 
@@ -138,9 +176,8 @@ export const POST: APIRoute = async ({ request }) => {
         });
 
         // --- GOOGLE NAPTÁR LINK GENERÁLÁSA ---
-        const endDate = new Date(requestedDate.getTime() + threeHoursInMs);
+        const endDate = new Date(requestedEndTime);
         
-        // Dátum formázása a Google Naptár elvárásai szerint (UTC, írásjelek nélkül: YYYYMMDDTHHMMSSZ)
         const formatGCalDate = (date: Date) => date.toISOString().replace(/-|:|\.\d\d\d/g, '');
         const gCalStartTime = formatGCalDate(requestedDate);
         const gCalEndTime = formatGCalDate(endDate);
@@ -178,12 +215,10 @@ export const POST: APIRoute = async ({ request }) => {
               <p style="margin-top: 30px; margin-bottom: 20px;">A foglalás kezeléséhez vagy naptárba mentéséhez használd az alábbi gombokat:</p>
               
               <div style="display: flex; flex-direction: column; gap: 15px; align-items: flex-start;">
-                <!-- Eredeti Admin gomb -->
                 <a href="${adminLink}" style="display: inline-block; background-color: #db2777; color: white; padding: 12px 25px; text-decoration: none; border-radius: 50px; font-weight: bold; text-align: center;">
                   Admin felület megnyitása
                 </a>
                 
-                <!-- Új Google Naptár gomb (Másodlagos design, illeszkedik a rózsaszín témához) -->
                 <a href="${googleCalendarUrl}" target="_blank" style="display: inline-block; background-color: #fdf2f8; color: #db2777; border: 2px solid #db2777; padding: 10px 23px; text-decoration: none; border-radius: 50px; font-weight: bold; text-align: center;">
                   📅 Hozzáadás Google Naptárhoz
                 </a>
@@ -198,7 +233,6 @@ export const POST: APIRoute = async ({ request }) => {
       }
     }
 
-    // Sikeres visszajelzés a frontend naptárnak
     return new Response(JSON.stringify({ success: true, bookingId: booking.id }), { 
       status: 200,
       headers: { 'Content-Type': 'application/json' }
