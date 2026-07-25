@@ -9,7 +9,6 @@ const { data: settingsData } = await supabase.from('site_settings').select('*');
 const { data: openingHours } = await supabase.from('opening_hours').select('*').order('day_id');
 const { data: closedDatesData } = await supabase.from('closed_dates').select('closed_date, reason');
 
-// Árak és szolgáltatások lekérése kategóriák szerint a prices és price_categories táblákból
 const { data: categoriesData } = await supabase
   .from('price_categories')
   .select('id, name, display_order, prices(id, service_name, description, price_value, duration_minutes)')
@@ -28,53 +27,58 @@ const allPricesFlattened = categoriesWithPrices.flatMap(cat =>
 );
 ---
 
-<section class="py-24 px-4 bg-white relative">
+<section class="py-12 md:py-24 px-4 bg-white relative z-10">
   <div class="max-w-6xl mx-auto">
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-16">
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16 relative">
       
-      <!-- Bal oldali oszlop: Elérhetőségek és Nyitvatartás -->
-      <div class="space-y-12">
+      <div class="space-y-8 md:space-y-12 relative z-20">
         <div>
-          <h2 class="text-4xl font-serif font-bold text-slate-900 mb-6 tracking-tight">Kapcsolat</h2>
-          <p class="text-slate-600 mb-10 leading-relaxed italic">
-            Kérdésed van vagy időpontot foglalnál? Keress bizalommal az alábbi elérhetőségeken!
+          <div class="mb-6 overflow-hidden rounded-[2rem] shadow-md transition-transform duration-300 hover:scale-[1.01] relative z-30">
+            <a href="#galeria" class="block w-full h-full cursor-pointer">
+              <img src="/images/index_cover.jpeg" alt="Műköröm Galéria" class="w-full h-56 md:h-64 object-cover hover:scale-105 transition-transform duration-500" />
+            </a>
+          </div>
+
+          <h2 class="text-3xl md:text-4xl font-serif font-bold text-slate-900 mb-4 md:mb-6 tracking-tight">Műköröm és Géllakk Szeged</h2>
+          <p class="text-slate-600 mb-8 leading-relaxed italic text-sm md:text-base">
+            Professzionális műkörömépítés, töltés, géllakk és manikűr szolgáltatások a szegedi (baktói) szalonomban. Részletes árakért és információkért keresd fel a Facebook oldalamat, vagy tekintsd meg az alábbi árlistát! Kérdésed van vagy időpontot foglalnál? Keress bizalommal az alábbi elérhetőségeken!
           </p>
           
-          <div class="space-y-8">
-            <div class="flex items-center space-x-5 group">
-              <div class="w-14 h-14 bg-pink-100 rounded-2xl flex items-center justify-center text-pink-600 group-hover:bg-pink-600 group-hover:text-white transition-all duration-300 shadow-sm">
-                <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/></svg>
+          <div class="space-y-6 md:space-y-8">
+            <div class="flex items-center space-x-4 md:space-x-5 group relative z-30">
+              <div class="w-12 h-12 md:w-14 md:h-14 bg-pink-100 rounded-2xl flex items-center justify-center text-pink-600 group-hover:bg-pink-600 group-hover:text-white transition-all duration-300 shadow-sm shrink-0">
+                <svg class="w-6 h-6 md:w-7 md:h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/></svg>
               </div>
               <div>
                 <p class="text-[10px] text-slate-400 font-bold uppercase tracking-[0.2em] mb-1">Hívj bátran</p>
-                <a href={`tel:${phone.replace(/\s/g, '')}`} class="text-xl font-bold text-slate-800 hover:text-pink-600 transition-colors tracking-tight">{phone}</a>
+                <a href={`tel:${phone.replace(/\s/g, '')}`} class="text-lg md:text-xl font-bold text-slate-800 hover:text-pink-600 transition-colors tracking-tight">{phone}</a>
               </div>
             </div>
 
-            <div class="flex items-center space-x-5 group">
-              <div class="w-14 h-14 bg-pink-100 rounded-2xl flex items-center justify-center text-pink-600 group-hover:bg-pink-600 group-hover:text-white transition-all duration-300 shadow-sm">
-                <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+            <div class="flex items-center space-x-4 md:space-x-5 group relative z-30">
+              <div class="w-12 h-12 md:w-14 md:h-14 bg-pink-100 rounded-2xl flex items-center justify-center text-pink-600 group-hover:bg-pink-600 group-hover:text-white transition-all duration-300 shadow-sm shrink-0">
+                <svg class="w-6 h-6 md:w-7 md:h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
               </div>
               <div>
                 <p class="text-[10px] text-slate-400 font-bold uppercase tracking-[0.2em] mb-1">Írj nekem</p>
-                <a href={`mailto:${email}`} class="text-lg font-semibold text-slate-800 hover:text-pink-600 transition-colors">{email}</a>
+                <a href={`mailto:${email}`} class="text-base md:text-lg font-semibold text-slate-800 hover:text-pink-600 transition-colors">{email}</a>
               </div>
             </div>
 
-            <div class="flex items-center space-x-5 group">
-               <div class="w-14 h-14 bg-pink-100 rounded-2xl flex items-center justify-center text-pink-600 group-hover:bg-pink-600 group-hover:text-white transition-all duration-300 shadow-sm">
-                <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+            <div class="flex items-center space-x-4 md:space-x-5 group relative z-30">
+               <div class="w-12 h-12 md:w-14 md:h-14 bg-pink-100 rounded-2xl flex items-center justify-center text-pink-600 group-hover:bg-pink-600 group-hover:text-white transition-all duration-300 shadow-sm shrink-0">
+                <svg class="w-6 h-6 md:w-7 md:h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
               </div>
               <div>
                 <p class="text-[10px] text-slate-400 font-bold uppercase tracking-[0.2em] mb-1">Helyszín</p>
-                <p class="text-lg font-semibold text-slate-800">{address}</p>
+                <p class="text-base md:text-lg font-semibold text-slate-800">{address}</p>
               </div>
             </div>
           </div>
         </div>
 
-        <div class="bg-slate-50 p-8 rounded-[2.5rem] border border-slate-100 shadow-sm">
-          <h3 class="text-xl font-bold mb-6 text-slate-800 flex items-center">
+        <div class="bg-slate-50 p-6 md:p-8 rounded-[2rem] md:rounded-[2.5rem] border border-slate-100 shadow-sm relative z-20">
+          <h3 class="text-lg md:text-xl font-bold mb-4 md:mb-6 text-slate-800 flex items-center">
             <span class="w-2 h-2 bg-pink-500 rounded-full mr-3"></span> Nyitvatartás
           </h3>
           <div class="space-y-3">
@@ -90,16 +94,14 @@ const allPricesFlattened = categoriesWithPrices.flatMap(cat =>
         </div>
       </div>
 
-      <!-- Jobb oldali oszlop: Foglalási űrlap -->
-      <div id="idopont" class="bg-slate-50 p-8 md:p-12 rounded-[2.5rem] border border-pink-100 shadow-xl relative overflow-hidden scroll-mt-28">
+      <div id="idopont" class="bg-slate-50 p-6 md:p-12 rounded-[2rem] md:rounded-[2.5rem] border border-pink-100 shadow-xl relative overflow-hidden scroll-mt-28 md:scroll-mt-36 z-20">
         
-        <form id="booking-form" class="space-y-6" data-hours={JSON.stringify(hoursMap)} data-closed={JSON.stringify(extraClosedDates)} data-prices={JSON.stringify(allPricesFlattened)}>
+        <form id="booking-form" class="space-y-5 md:space-y-6" data-hours={JSON.stringify(hoursMap)} data-closed={JSON.stringify(extraClosedDates)} data-prices={JSON.stringify(allPricesFlattened)}>
           
           <div class="space-y-4">
-            <!-- Szolgáltatás legördülő lista -->
             <div>
               <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Milyen körmöt szeretnél? *</label>
-              <select name="service_id" id="service-select" required class="w-full p-4 mt-1 rounded-2xl bg-white border-none ring-1 ring-slate-200 focus:ring-2 focus:ring-pink-500 outline-none transition-all shadow-sm text-slate-700 font-medium cursor-pointer">
+              <select name="service_id" id="service-select" required class="w-full p-4 mt-1 rounded-2xl bg-white border-none ring-1 ring-slate-200 focus:ring-2 focus:ring-pink-500 outline-none transition-all shadow-sm text-slate-700 text-base font-medium cursor-pointer relative z-30">
                 <option value="" disabled selected>Válassz szolgáltatást...</option>
                 {categoriesWithPrices.map((cat: any) => (
                   <optgroup label={cat.name}>
@@ -113,39 +115,42 @@ const allPricesFlattened = categoriesWithPrices.flatMap(cat =>
               </select>
             </div>
 
-            <input type="text" name="name" required placeholder="Teljes név" pattern="^[a-zA-ZáéíóöőúüűÁÉÍÓÖŐÚÜŰ\-\.\s]+$" title="Kérlek, csak betűket adj meg a névhez!" class="w-full p-4 rounded-2xl bg-white border-none ring-1 ring-slate-200 focus:ring-2 focus:ring-pink-500 outline-none transition-all shadow-sm" />
+            <input type="text" name="name" required placeholder="Teljes név" pattern="^[a-zA-ZáéíóöőúüűÁÉÍÓÖŐÚÜŰ\-\.\s]+$" title="Kérlek, csak betűket adj meg a névhez!" class="w-full p-4 rounded-2xl bg-white border-none ring-1 ring-slate-200 focus:ring-2 focus:ring-pink-500 outline-none transition-all shadow-sm text-base relative z-30" />
             
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <input type="email" name="email" required placeholder="E-mail" pattern="[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$" title="Kérlek, érvényes e-mail címet adj meg (pl. pelda@email.hu)!" class="w-full p-4 rounded-2xl bg-white border-none ring-1 ring-slate-200 focus:ring-2 focus:ring-pink-500 transition-all shadow-sm" />
-              <input type="tel" name="phone" required placeholder="Telefon" pattern="^[\+0-9\s\-]+$" minlength="8" title="Kérlek, csak számokat (és '+' jelet) adj meg a telefonszámhoz!" class="w-full p-4 rounded-2xl bg-white border-none ring-1 ring-slate-200 focus:ring-2 focus:ring-pink-500 transition-all shadow-sm" />
+              <input type="email" name="email" required placeholder="E-mail" pattern="[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$" title="Kérlek, érvényes e-mail címet adj meg!" class="w-full p-4 rounded-2xl bg-white border-none ring-1 ring-slate-200 focus:ring-2 focus:ring-pink-500 transition-all shadow-sm text-base relative z-30" />
+              <input type="tel" name="phone" required placeholder="Telefon" pattern="^[\+0-9\s\-]+$" minlength="8" title="Kérlek, csak számokat adj meg!" class="w-full p-4 rounded-2xl bg-white border-none ring-1 ring-slate-200 focus:ring-2 focus:ring-pink-500 transition-all shadow-sm text-base relative z-30" />
             </div>
           </div>
 
-          <!-- Naptár konténer (kezdetben lezárva / figyelmeztető üzenettel) -->
           <div class="space-y-4">
-            <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">1. Nap kiválasztása</label>
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between ml-1 mr-1 gap-1">
+              <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">1. Nap kiválasztása</label>
+            </div>
             
-            <!-- Figyelmeztető sáv, ha még nincs kiválasztva szolgáltatás -->
-            <div id="calendar-warning" class="p-6 bg-pink-50 text-pink-600 rounded-3xl border border-pink-200 text-center text-sm font-bold shadow-inner">
+            <div class="p-3 md:p-4 bg-pink-50/80 border border-pink-200/60 rounded-2xl text-pink-800 text-xs font-semibold flex items-center space-x-3 shadow-sm">
+              <span class="text-base shrink-0">💡</span>
+              <p>A naptárban megjelenő időpontok tájékoztató jellegűek.</p>
+            </div>
+
+            <div id="calendar-warning" class="p-4 md:p-5 bg-white text-slate-500 rounded-2xl border border-slate-200 text-center text-xs font-bold shadow-inner relative z-30">
               ✨ Kérlek, először <strong>válassz szolgáltatást</strong> a fenti menüből a naptár megtekintéséhez!
             </div>
 
-            <!-- Naptár (kezdetben rejtve) -->
-            <div id="calendar-container" class="rounded-3xl overflow-hidden shadow-inner ring-1 ring-slate-200 bg-white p-2 min-h-75 hidden">
+            <div id="calendar-container" class="rounded-3xl overflow-x-auto shadow-inner ring-1 ring-slate-200 bg-white p-2 min-h-75 hidden relative z-30">
                 <input type="text" id="inline-calendar" required class="hidden" />
             </div>
           </div>
 
-          <!-- Idősávok konténer (alapból rejtett) -->
           <div id="time-selection" class="space-y-4 hidden">
             <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">2. Szabad időpontok</label>
             
-            <div id="time-slots" class="grid grid-cols-4 gap-2"></div>
+            <div id="time-slots" class="grid grid-cols-2 sm:grid-cols-4 gap-2 relative z-30"></div>
             
             <input type="hidden" name="date" id="final-date-input" required />
           </div>
           
-          <button type="submit" id="submit-btn" class="w-full py-5 bg-pink-600 text-white font-bold rounded-2xl hover:bg-pink-700 hover:shadow-2xl active:scale-95 transition-all flex items-center justify-center disabled:bg-slate-300 shadow-lg shadow-pink-100">
+          <button type="submit" id="submit-btn" class="w-full py-4 md:py-5 bg-pink-600 text-white font-bold rounded-2xl hover:bg-pink-700 hover:shadow-2xl active:scale-95 transition-all flex items-center justify-center disabled:bg-slate-300 shadow-lg shadow-pink-100 relative z-30 cursor-pointer text-base">
             <span>Időpont véglegesítése</span>
           </button>
         </form>
@@ -160,59 +165,73 @@ const allPricesFlattened = categoriesWithPrices.flatMap(cat =>
 <script is:inline src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 
 <script>
+function initBookingSystem() {
+  // 1. Zökkenőmentes görgetés beállítása mobilon és desktopon minden olyan gombra / linkre, ami az #idopont-ra mutat
+  const scrollTargets = document.querySelectorAll('a[href*="#idopont"], button[data-scroll="#idopont"]');
+  scrollTargets.forEach(function(target) {
+    target.addEventListener('click', function(e) {
+      const targetElement = document.getElementById('idopont');
+      if (targetElement) {
+        e.preventDefault();
+        targetElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    });
+  });
+
   const hu = {
     weekdays: { shorthand: ["V", "H", "K", "Sz", "Cs", "P", "Sz"], longhand: ["Vasárnap", "Hétfő", "Kedd", "Szerda", "Csütörtök", "Péntek", "Szombat"] },
     months: { shorthand: ["Jan", "Feb", "Már", "Ápr", "Máj", "Jún", "Júl", "Aug", "Szep", "Okt", "Nov", "Dec"], longhand: ["Január", "Február", "Március", "Április", "Május", "Június", "Július", "Augusztus", "Szeptember", "Október", "November", "December"] },
-    firstDayOfWeek: 1, ordinal: () => "."
+    firstDayOfWeek: 1, ordinal: function() { return '.'; }
   };
 
-  const form = document.getElementById('booking-form') as HTMLFormElement | null;
+  const form = document.getElementById('booking-form');
+  if (!form) return; 
+
   const slotsDiv = document.getElementById('time-slots');
   const selectionArea = document.getElementById('time-selection');
-  const finalInput = document.getElementById('final-date-input') as HTMLInputElement | null;
-  const submitBtn = document.getElementById('submit-btn') as HTMLButtonElement | null;
-  const serviceSelect = document.getElementById('service-select') as HTMLSelectElement | null;
+  const finalInput = document.getElementById('final-date-input');
+  const submitBtn = document.getElementById('submit-btn');
+  const serviceSelect = document.getElementById('service-select');
   const calendarWarning = document.getElementById('calendar-warning');
   const calendarContainer = document.getElementById('calendar-container');
 
-  const hoursArray = JSON.parse(form?.dataset.hours || '[]');
-  const closedDatesArray = JSON.parse(form?.dataset.closed || '[]'); 
+  const hoursArray = JSON.parse(form.dataset.hours || '[]');
+  const closedDatesArray = JSON.parse(form.dataset.closed || '[]'); 
 
-  let bookedDateStrings: string[] = [];
-  let fpInstance: any = null;
-  let selectedDateObj: Date | null = null;
+  let bookedDateStrings = [];
+  let fpInstance = null;
+  let selectedDateObj = null;
 
   async function fetchBookedSlots() {
     try {
       const resp = await fetch('/api/get-slots');
       if (resp.ok) {
         const data = await resp.json();
-        // Levágjuk az időzóna jelölést a biztonságos összehasonlításhoz
-        bookedDateStrings = data.map((d: string) => d.replace(/([+-]\d{2}:\d{2}|Z)$/, ''));
+        bookedDateStrings = data.map(d => d.replace(/([+-]\d{2}:\d{2}|Z)$/, ''));
       }
     } catch (e) { 
-        console.error("Hiba a foglalt időpontok lekérésekor:", e); 
+      console.error(e);
     }
   }
 
-  function getSelectedDuration(): number {
+  function getSelectedDuration() {
     if (!serviceSelect || !serviceSelect.value) return 60;
     const selectedOption = serviceSelect.options[serviceSelect.selectedIndex];
     return parseInt(selectedOption.dataset.duration || '60', 10);
   }
 
-  function isDayFullyBooked(day: Date): boolean {
+  function isDayFullyBooked(day) {
     const year = day.getFullYear();
     const month = String(day.getMonth() + 1).padStart(2, '0');
     const date = String(day.getDate()).padStart(2, '0');
     const selectedISODate = `${year}-${month}-${date}`;
     
-    const customClosedInfo = closedDatesArray.find((d: any) => d.closed_date === selectedISODate);
+    const customClosedInfo = closedDatesArray.find(d => d.closed_date === selectedISODate);
     if (customClosedInfo) return true;
 
     const jsDay = day.getDay();
     const dbDayId = jsDay === 0 ? 7 : jsDay;
-    const dbConfig = hoursArray.find((d: any) => d.day_id === dbDayId);
+    const dbConfig = hoursArray.find(d => d.day_id === dbDayId);
     const dayConfig = dbConfig || { is_closed: false, open_time: '15:30:00', close_time: '17:00:00' };
 
     if (dayConfig.is_closed) return true;
@@ -232,56 +251,46 @@ const allPricesFlattened = categoriesWithPrices.flatMap(cat =>
 
     for (let slotMins = openTotalMins; slotMins <= closeTotalMins; slotMins += 30) {
       let isConflict = false;
-
       if (dayBookings.length === 0) {
         availableSlotsCount++;
         continue;
       }
-
       dayBookings.forEach(bStr => {
         const bHour = parseInt(bStr.substring(11, 13), 10);
         const bMin = parseInt(bStr.substring(14, 16), 10);
         const bTotalMins = bHour * 60 + bMin;
-
-        if (Math.abs(slotMins - bTotalMins) < durationMins) {
-          isConflict = true;
-        }
+        if (Math.abs(slotMins - bTotalMins) < durationMins) isConflict = true;
       });
-
-      if (!isConflict) {
-        availableSlotsCount++;
-      }
+      if (!isConflict) availableSlotsCount++;
     }
-
     return availableSlotsCount === 0;
   }
 
-  function generateSlots(day: Date) {
+  function generateSlots(day) {
     if (!slotsDiv || !selectionArea) return;
     
     slotsDiv.innerHTML = '';
-    
     const year = day.getFullYear();
     const month = String(day.getMonth() + 1).padStart(2, '0');
     const date = String(day.getDate()).padStart(2, '0');
     const selectedISODate = `${year}-${month}-${date}`;
     
-    const customClosedInfo = closedDatesArray.find((d: any) => d.closed_date === selectedISODate);
+    const customClosedInfo = closedDatesArray.find(d => d.closed_date === selectedISODate);
     
     if (customClosedInfo) {
         const reasonText = customClosedInfo.reason ? `: ${customClosedInfo.reason}` : '';
-        slotsDiv.innerHTML = `<p class="col-span-4 text-center text-red-500 py-6 bg-red-50 rounded-2xl border border-red-100 italic text-sm font-semibold shadow-inner">Ezen a napon zárva tartunk${reasonText}.</p>`;
+        slotsDiv.innerHTML = `<p class="col-span-2 sm:col-span-4 text-center text-red-500 py-6 bg-red-50 rounded-2xl border border-red-100 italic text-sm font-semibold shadow-inner">Ezen a napon zárva tartunk${reasonText}.</p>`;
         selectionArea.classList.remove('hidden');
         return;
     }
 
     const jsDay = day.getDay();
     const dbDayId = jsDay === 0 ? 7 : jsDay;
-    const dbConfig = hoursArray.find((d: any) => d.day_id === dbDayId);
+    const dbConfig = hoursArray.find(d => d.day_id === dbDayId);
     const dayConfig = dbConfig || { is_closed: false, open_time: '15:30:00', close_time: '17:00:00' };
 
     if (dayConfig.is_closed) {
-        slotsDiv.innerHTML = '<p class="col-span-4 text-center text-red-500 py-6 bg-red-50 rounded-2xl border border-red-100 italic text-sm font-semibold shadow-inner">Ezen a napon zárva tartunk.</p>';
+        slotsDiv.innerHTML = '<p class="col-span-2 sm:col-span-4 text-center text-red-500 py-6 bg-red-50 rounded-2xl border border-red-100 italic text-sm font-semibold shadow-inner">Ezen a napon zárva tartunk.</p>';
         selectionArea.classList.remove('hidden');
         return;
     }
@@ -300,61 +309,52 @@ const allPricesFlattened = categoriesWithPrices.flatMap(cat =>
     const dayBookings = bookedDateStrings.filter(bStr => bStr.startsWith(selectedISODate));
     
     let availableSlotsCount = 0;
-    const tempSlots: { slotValue: string, formattedText: string, isBlocked: boolean }[] = [];
+    const tempSlots = [];
 
     for (let slotMins = openTotalMins; slotMins <= closeTotalMins; slotMins += 30) {
       const h = Math.floor(slotMins / 60);
       const m = slotMins % 60;
-
       const formattedH = h.toString().padStart(2, '0');
       const formattedM = m === 0 ? '00' : m.toString();
       const slotValue = `${selectedISODate}T${formattedH}:${formattedM}:00`;
 
       let isConflict = false;
-
       dayBookings.forEach(bStr => {
         const bHour = parseInt(bStr.substring(11, 13), 10);
         const bMin = parseInt(bStr.substring(14, 16), 10);
         const bTotalMins = bHour * 60 + bMin;
-
-        if (Math.abs(slotMins - bTotalMins) < durationMins) {
-          isConflict = true;
-        }
+        if (Math.abs(slotMins - bTotalMins) < durationMins) isConflict = true;
       });
 
-      if (!isConflict) {
-        availableSlotsCount++;
-      }
+      if (!isConflict) availableSlotsCount++;
       tempSlots.push({ slotValue, formattedText: `${formattedH}:${formattedM}`, isBlocked: isConflict });
     }
 
     if (availableSlotsCount === 0) {
-        slotsDiv.innerHTML = '<p class="col-span-4 text-center text-red-500 py-6 bg-red-50 rounded-2xl border border-red-100 italic text-sm font-semibold shadow-inner">Erre a napra már minden időpont betelt.</p>';
+        slotsDiv.innerHTML = '<p class="col-span-2 sm:col-span-4 text-center text-red-500 py-6 bg-red-50 rounded-2xl border border-red-100 italic text-sm font-semibold shadow-inner">Erre a napra már minden időpont betelt.</p>';
         return;
     }
 
-    tempSlots.forEach(({ slotValue, formattedText, isBlocked }) => {
+    tempSlots.forEach(function(slot) {
         const btn = document.createElement('button');
         btn.type = 'button';
-        btn.textContent = formattedText;
+        btn.textContent = slot.formattedText;
         
-        if (isBlocked) {
+        if (slot.isBlocked) {
           btn.disabled = true;
-          btn.className = "p-2 rounded-xl bg-slate-100 text-slate-300 cursor-not-allowed text-[10px] opacity-50 line-through";
+          btn.className = "p-3 rounded-xl bg-slate-100 text-slate-300 cursor-not-allowed text-xs opacity-50 line-through relative z-30";
         } else {
-          btn.className = "time-btn p-2 rounded-xl bg-white text-slate-700 ring-1 ring-slate-100 text-xs font-bold hover:bg-pink-50 transition-all";
+          btn.className = "time-btn p-3 rounded-xl bg-white text-slate-700 ring-1 ring-slate-100 text-xs font-bold hover:bg-pink-50 transition-all relative z-30 cursor-pointer";
           
-          btn.onclick = () => {
-            document.querySelectorAll('.time-btn').forEach(b => {
+          btn.onclick = function(e) {
+            e.preventDefault();
+            document.querySelectorAll('.time-btn').forEach(function(b) {
                 b.classList.remove('bg-pink-600', 'text-white', 'ring-pink-600');
                 b.classList.add('bg-white', 'text-slate-700', 'ring-1', 'ring-slate-100');
             });
             btn.classList.remove('bg-white', 'text-slate-700', 'ring-1', 'ring-slate-100');
             btn.classList.add('bg-pink-600', 'text-white', 'ring-pink-600');
-            
-            if (finalInput) {
-              finalInput.value = slotValue;
-            }
+            if (finalInput) finalInput.value = slot.slotValue;
           };
         }
         slotsDiv.appendChild(btn);
@@ -368,40 +368,40 @@ const allPricesFlattened = categoriesWithPrices.flatMap(cat =>
     const minAllowedDate = new Date(today);
     minAllowedDate.setDate(today.getDate() + 2);
 
-    // @ts-ignore
-    fpInstance = flatpickr("#inline-calendar", {
-      inline: true,
-      appendTo: document.getElementById('calendar-container'),
-      locale: hu,
-      minDate: minAllowedDate,
-      dateFormat: "Y-m-d",
-      
-      onDayCreate: (dObj, dStr, fp, dayElem) => {
-        const localYear = dayElem.dateObj.getFullYear();
-        const localMonth = String(dayElem.dateObj.getMonth() + 1).padStart(2, '0');
-        const localDay = String(dayElem.dateObj.getDate()).padStart(2, '0');
-        const dateISO = `${localYear}-${localMonth}-${localDay}`;
-
-        const matchClosed = closedDatesArray.find((d: any) => d.closed_date === dateISO);
+    if (window.flatpickr) {
+      fpInstance = window.flatpickr("#inline-calendar", {
+        inline: true,
+        appendTo: document.getElementById('calendar-container'),
+        locale: hu,
+        minDate: minAllowedDate,
+        dateFormat: "Y-m-d",
         
-        if (matchClosed) {
-          dayElem.classList.add('custom-closed-day');
-        } else if (isDayFullyBooked(dayElem.dateObj)) {
-          dayElem.classList.add('custom-fully-booked-day');
+        onDayCreate: function(dObj, dStr, fp, dayElem) {
+          const localYear = dayElem.dateObj.getFullYear();
+          const localMonth = String(dayElem.dateObj.getMonth() + 1).padStart(2, '0');
+          const localDay = String(dayElem.dateObj.getDate()).padStart(2, '0');
+          const dateISO = `${localYear}-${localMonth}-${localDay}`;
+
+          const matchClosed = closedDatesArray.find(function(d) { return d.closed_date === dateISO; });
+          
+          if (matchClosed) {
+            dayElem.classList.add('custom-closed-day');
+          } else if (isDayFullyBooked(dayElem.dateObj)) {
+            dayElem.classList.add('custom-fully-booked-day');
+          }
+        },
+        onChange: function(selectedDates) {
+          if (selectedDates.length > 0) {
+            selectedDateObj = selectedDates[0];
+            generateSlots(selectedDateObj);
+          }
         }
-      },
-      onChange: (selectedDates: Date[]) => {
-        if (selectedDates.length > 0) {
-          selectedDateObj = selectedDates[0];
-          generateSlots(selectedDateObj);
-        }
-      }
-    });
+      });
+    }
   }
 
-  // Ha a felhasználó kiválaszt egy szolgáltatást, feloldjuk a naptárat
   if (serviceSelect) {
-    serviceSelect.addEventListener('change', async () => {
+    serviceSelect.addEventListener('change', async function() {
       if (serviceSelect.value) {
         if (calendarWarning) calendarWarning.classList.add('hidden');
         if (calendarContainer) calendarContainer.classList.remove('hidden');
@@ -410,44 +410,40 @@ const allPricesFlattened = categoriesWithPrices.flatMap(cat =>
           await initCalendar();
         } else {
           fpInstance.redraw();
-          if (selectedDateObj) {
-            generateSlots(selectedDateObj);
-          }
+          if (selectedDateObj) generateSlots(selectedDateObj);
         }
       }
     });
   }
 
-  const nameInput = document.querySelector('input[name="name"]') as HTMLInputElement;
-  const phoneInput = document.querySelector('input[name="phone"]') as HTMLInputElement;
+  const nameInput = document.querySelector('input[name="name"]');
+  const phoneInput = document.querySelector('input[name="phone"]');
 
   if (nameInput) {
-    nameInput.addEventListener('input', (e) => {
-      const target = e.target as HTMLInputElement;
-      target.value = target.value.replace(/[0-9]/g, '');
+    nameInput.addEventListener('input', function(e) {
+      e.target.value = e.target.value.replace(/[0-9]/g, '');
     });
   }
 
   if (phoneInput) {
-    phoneInput.addEventListener('input', (e) => {
-      const target = e.target as HTMLInputElement;
-      target.value = target.value.replace(/[^\+0-9\s\-]/g, '');
+    phoneInput.addEventListener('input', function(e) {
+      e.target.value = e.target.value.replace(/[^\+0-9\s\-]/g, '');
     });
   }
 
-  if (form && submitBtn) {
-    form.onsubmit = async (e) => {
+  if (submitBtn) {
+    form.addEventListener('submit', async function(e) {
       e.preventDefault();
       
       const statusCont = document.getElementById('status-container');
       const btnSpan = submitBtn.querySelector('span');
 
-      if (!serviceSelect?.value) {
+      if (!serviceSelect || !serviceSelect.value) {
           alert("Kérlek, először válassz ki egy szolgáltatást!");
           return;
       }
 
-      if (!finalInput?.value) {
+      if (!finalInput || !finalInput.value) {
           alert("Kérlek, válassz ki egy szabad időpontot a naptárban!");
           return;
       }
@@ -468,10 +464,10 @@ const allPricesFlattened = categoriesWithPrices.flatMap(cat =>
         if (statusCont) {
           statusCont.classList.remove('hidden');
           if (res.ok) {
-            statusCont.className = "mt-6 p-6 bg-green-50 text-green-700 rounded-3xl border border-green-200";
+            statusCont.className = "mt-6 p-6 bg-green-50 text-green-700 rounded-3xl border border-green-200 relative z-30";
             statusCont.textContent = "Sikeres foglalás! E-mailben küldtük a visszaigazoló linket.";
             form.reset();
-            selectionArea?.classList.add('hidden');
+            if (selectionArea) selectionArea.classList.add('hidden');
             if (calendarContainer) calendarContainer.classList.add('hidden');
             if (calendarWarning) calendarWarning.classList.remove('hidden');
             
@@ -479,22 +475,26 @@ const allPricesFlattened = categoriesWithPrices.flatMap(cat =>
             if (fpInstance) fpInstance.redraw();
           } else {
             const r = await res.json();
-            statusCont.className = "mt-6 p-6 bg-red-50 text-red-700 rounded-3xl border border-red-200";
+            statusCont.className = "mt-6 p-6 bg-red-50 text-red-700 rounded-3xl border border-red-200 relative z-30";
             statusCont.textContent = r.error || "Hiba történt a foglalás során.";
           }
         }
       } catch (err) {
-        console.error("Váratlan hiba:", err);
+        console.error(err);
       } finally {
         submitBtn.disabled = false;
         if (btnSpan) btnSpan.textContent = 'Időpont véglegesítése';
       }
-    };
+    });
   }
+}
+
+document.addEventListener('DOMContentLoaded', initBookingSystem);
+document.addEventListener('astro:page-load', initBookingSystem);
 </script>
 
 <style>
-  :global(.flatpickr-calendar) { box-shadow: none !important; border: none !important; width: 100% !important; background: transparent !important; }
+  :global(.flatpickr-calendar) { box-shadow: none !important; border: none !important; width: 100% !important; max-width: 100% !important; background: transparent !important; z-index: 40 !important;}
   :global(.flatpickr-day.selected) { background: #db2777 !important; border-color: #db2777 !important; border-radius: 12px !important; color: white !important;}
   
   :global(.custom-closed-day), :global(.custom-fully-booked-day) { 
