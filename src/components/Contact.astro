@@ -31,14 +31,9 @@ const allPricesFlattened = categoriesWithPrices.flatMap(cat =>
   <div class="max-w-6xl mx-auto">
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16 relative">
       
+      <!-- Bal oldali oszlop: Elérhetőségek és Nyitvatartás -->
       <div class="space-y-8 md:space-y-12 relative z-20">
         <div>
-          <div class="mb-6 overflow-hidden rounded-[2rem] shadow-md transition-transform duration-300 hover:scale-[1.01] relative z-30">
-            <a href="#galeria" class="block w-full h-full cursor-pointer">
-              <img src="/images/index_cover.jpeg" alt="Műköröm Galéria" class="w-full h-56 md:h-64 object-cover hover:scale-105 transition-transform duration-500" />
-            </a>
-          </div>
-
           <h2 class="text-3xl md:text-4xl font-serif font-bold text-slate-900 mb-4 md:mb-6 tracking-tight">Műköröm és Géllakk Szeged</h2>
           <p class="text-slate-600 mb-8 leading-relaxed italic text-sm md:text-base">
             Professzionális műkörömépítés, töltés, géllakk és manikűr szolgáltatások a szegedi (baktói) szalonomban. Részletes árakért és információkért keresd fel a Facebook oldalamat, vagy tekintsd meg az alábbi árlistát! Kérdésed van vagy időpontot foglalnál? Keress bizalommal az alábbi elérhetőségeken!
@@ -94,11 +89,13 @@ const allPricesFlattened = categoriesWithPrices.flatMap(cat =>
         </div>
       </div>
 
+      <!-- Jobb oldali oszlop: Foglalási űrlap és naptár -->
       <div id="idopont" class="bg-slate-50 p-6 md:p-12 rounded-[2rem] md:rounded-[2.5rem] border border-pink-100 shadow-xl relative overflow-hidden scroll-mt-28 md:scroll-mt-36 z-20">
         
         <form id="booking-form" class="space-y-5 md:space-y-6" data-hours={JSON.stringify(hoursMap)} data-closed={JSON.stringify(extraClosedDates)} data-prices={JSON.stringify(allPricesFlattened)}>
           
           <div class="space-y-4">
+            <!-- Szolgáltatás legördülő lista (text-base prevenálja a mobil zoomot) -->
             <div>
               <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Milyen körmöt szeretnél? *</label>
               <select name="service_id" id="service-select" required class="w-full p-4 mt-1 rounded-2xl bg-white border-none ring-1 ring-slate-200 focus:ring-2 focus:ring-pink-500 outline-none transition-all shadow-sm text-slate-700 text-base font-medium cursor-pointer relative z-30">
@@ -123,6 +120,7 @@ const allPricesFlattened = categoriesWithPrices.flatMap(cat =>
             </div>
           </div>
 
+          <!-- Naptár konténer -->
           <div class="space-y-4">
             <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between ml-1 mr-1 gap-1">
               <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">1. Nap kiválasztása</label>
@@ -130,7 +128,7 @@ const allPricesFlattened = categoriesWithPrices.flatMap(cat =>
             
             <div class="p-3 md:p-4 bg-pink-50/80 border border-pink-200/60 rounded-2xl text-pink-800 text-xs font-semibold flex items-center space-x-3 shadow-sm">
               <span class="text-base shrink-0">💡</span>
-              <p>A naptárban megjelenő időpontok tájékoztató jellegűek.</p>
+              <p>A naptárban megjelenő Időtartam tájékoztató jellegűek.</p>
             </div>
 
             <div id="calendar-warning" class="p-4 md:p-5 bg-white text-slate-500 rounded-2xl border border-slate-200 text-center text-xs font-bold shadow-inner relative z-30">
@@ -142,6 +140,7 @@ const allPricesFlattened = categoriesWithPrices.flatMap(cat =>
             </div>
           </div>
 
+          <!-- Idősávok konténer -->
           <div id="time-selection" class="space-y-4 hidden">
             <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">2. Szabad időpontok</label>
             
@@ -166,7 +165,6 @@ const allPricesFlattened = categoriesWithPrices.flatMap(cat =>
 
 <script>
 function initBookingSystem() {
-  // 1. Zökkenőmentes görgetés beállítása mobilon és desktopon minden olyan gombra / linkre, ami az #idopont-ra mutat
   const scrollTargets = document.querySelectorAll('a[href*="#idopont"], button[data-scroll="#idopont"]');
   scrollTargets.forEach(function(target) {
     target.addEventListener('click', function(e) {
