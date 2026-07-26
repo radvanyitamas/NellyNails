@@ -77,9 +77,9 @@ export const POST: APIRoute = async ({ request }) => {
     }
 
     // ==========================================
-    // 4/c. SZOLGÁLTATÁS ÉS IDŐTARTAM LEKÉRÉSE
+    // 4/c. SZOLGÁLTATÁS ÉS IDŐTARTAM LEKÉRÉSE A PRICES TÁBLÁBÓL
     // ==========================================
-    let durationMinutes = 180; 
+    let durationMinutes = 180; // Alapértelmezett 3 óra
 
     if (serviceId) {
       const { data: serviceData } = await supabase
@@ -94,7 +94,7 @@ export const POST: APIRoute = async ({ request }) => {
     }
 
     // ==========================================
-    // 5. ÜTKÖZÉSVIZSGÁLAT
+    // 5. ÜTKÖZÉSVIZSGÁLAT (DINAMIKUS IDŐTARTAM ALAPJÁN)
     // ==========================================
     const durationMs = durationMinutes * 60 * 1000;
     const requestedTime = requestedDate.getTime();
@@ -136,7 +136,7 @@ export const POST: APIRoute = async ({ request }) => {
     }
 
     // ==========================================
-    // 6. ADATBÁZIS MENTÉS (Időzóna nélkül mentjük)
+    // 6. ADATBÁZIS MENTÉS (price_id-val)
     // ==========================================
     const { data: booking, error: dbError } = await supabase
       .from('bookings')
@@ -144,7 +144,7 @@ export const POST: APIRoute = async ({ request }) => {
         name, 
         email, 
         phone, 
-        booking_date: cleanDateStr, // Időzóna jelölés nélküli tiszta dátum string
+        booking_date: cleanDateStr, 
         status: 'pending',
         price_id: serviceId || null 
       }])
@@ -171,27 +171,32 @@ export const POST: APIRoute = async ({ request }) => {
         const cancelLink = `${domain}/manage-booking?token=${booking.cancel_token}`; 
         const adminLink = `${domain}/admin`; 
         
-        const formattedDate = requestedDate.toLocaleString('hu-HU', { 
-            year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' 
-        });
-
-        // --- GOOGLE NAPTÁR LINK IDŐZÓNA NÉLKÜL (FIX HELYI IDŐ) ---
-        const endDate = new Date(requestedEndTime);
+        // --- DÁTUM BIZTONSÁGOS SZÉTSZEDÉSE (Szerver időzóna hiba kikerülése) ---
+        const [datePart, timePart] = cleanDateStr.split('T');
+        const [year, month, day] = datePart.split('-');
+        const [hourStr, minuteStr] = timePart.split(':');
         
-        // Ez a függvény direkt kiszedi a helyi év-hónap-nap-óra-perc értéket, és nem konvertál UTC-re!
-        const formatGCalDatePure = (d: Date) => {
-          const pad = (n: number) => String(n).padStart(2, '0');
-          return `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}T${pad(d.getHours())}${pad(d.getMinutes())}00`;
-        };
+        const startHour = parseInt(hourStr, 10);
+        const startMinute = parseInt(minuteStr, 10);
+        
+        const formattedDate = `${year}. ${month}. ${day}. ${hourStr}:${minuteStr}`;
 
-        const gCalStartTime = formatGCalDatePure(requestedDate);
-        const gCalEndTime = formatGCalDatePure(endDate);
+        // --- GOOGLE NAPTÁR LINK GENERÁLÁSA TISZTA MATEKKAL ---
+        const totalStartMinutes = startHour * 60 + startMinute;
+        const totalEndMinutes = totalStartMinutes + durationMinutes;
+        
+        const endHour = Math.floor(totalEndMinutes / 60);
+        const endMinute = totalEndMinutes % 60;
+        
+        const pad = (n: number) => String(n).padStart(2, '0');
+        
+        const gCalStartTime = `${year}${month}${day}T${pad(startHour)}${pad(startMinute)}00`;
+        const gCalEndTime = `${year}${month}${day}T${pad(endHour)}${pad(endMinute)}00`;
         
         const gCalTitle = encodeURIComponent(`${name} időpontot foglalt`);
         const gCalDetails = encodeURIComponent(`Vendég neve: ${name}\nTelefonszám: ${phone || 'Nincs megadva'}\nE-mail cím: ${email}`);
         
-        // Megadjuk a céges naptárnak, hogy ez fixen helyi (Budapest) idő, ne csúsztassa el
-        const googleCalendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${gCalTitle}&dates=${gCalStartTime}/${gCalEndTime}&details=${gCalDetails}&ctz=Europe/Budapest`;
+        const googleCalendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${gCalTitle}&dates=${gCalStartTime}/${gCalEndTime}&details=${gCalDetails}`;
 
         // --- 7/a. E-MAIL A VENDÉGNEK ---
         await resend.emails.send({
