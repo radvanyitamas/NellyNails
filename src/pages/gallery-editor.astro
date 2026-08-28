@@ -1,6 +1,6 @@
 <div class="space-y-8 p-4 md:p-6">
   <div class="bg-pink-50 p-6 rounded-3xl border border-pink-100">
-    <h3 class="text-xl font-serif font-bold mb-4">Új kép feltöltése</h3>
+    <h3 class="text-xl font-serif font-bold mb-4">Új kép feltöltése (Automatikus tömörítéssel)</h3>
     <form id="upload-form" class="grid grid-cols-1 md:grid-cols-2 gap-4">
       <input type="text" id="title" placeholder="Kép címe (pl. Rose Gold Csillogás)" class="p-3 rounded-xl border border-pink-200 w-full" required />
       
@@ -14,7 +14,7 @@
       <input type="file" id="file" accept="image/*" class="md:col-span-2 p-2 bg-white rounded-xl border border-pink-200" required />
       
       <button type="submit" id="submit-btn" class="md:col-span-2 bg-pink-600 text-white py-3 rounded-xl font-bold hover:bg-pink-700 transition-all active:scale-95">
-        Kép mentése a galériába
+        Kép tömörítése és mentése a galériába
       </button>
     </form>
   </div>
@@ -23,37 +23,27 @@
   </div>
 </div>
 
+<!-- Profi képtömörítő könyvtár betöltése -->
+<script is:inline src="https://cdn.jsdelivr.net/npm/browser-image-compression@2.0.2/dist/browser-image-compression.js"></script>
+
 <script>
-  // Supabase kliens importálása a konfigurációs fájlból
   import { supabase } from "../lib/supabase";
 
-  // DOM elemek kinyerése és típusozása TypeScripthez
   const form = document.getElementById('upload-form') as HTMLFormElement;
   const list = document.getElementById('admin-gallery-list');
 
-  /**
-   * Galéria elemeinek betöltése az adatbázisból és kirajzolása
-   */
   async function loadGallery() {
-    // Képek lekérése a 'gallery' táblából, létrehozás szerint csökkenő sorrendben
     const { data, error } = await supabase.from('gallery').select('*').order('created_at', { ascending: false });
-    
-    if (error) {
-      console.error("Hiba a galéria betöltésekor:", error.message);
-      return;
-    }
+    if (error) { console.error("Hiba a galéria betöltésekor:", error.message); return; }
 
     if (list && data) {
-      // HTML struktúra felépítése a lekért adatokból
       list.innerHTML = data.map(item => `
         <div class="relative group rounded-xl overflow-hidden aspect-square border border-slate-200">
           <img src="${item.src}" class="w-full h-full object-cover" alt="${item.title || 'Galéria kép'}" />
-          
           <button onclick="deleteItem('${item.id}', '${item.storage_path}')" 
                   class="absolute inset-0 bg-red-600/90 text-white opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center transition-all font-bold backdrop-blur-sm">
             <span class="text-sm">TÖRLÉS</span>
           </button>
-          
           <div class="absolute bottom-0 left-0 right-0 p-1 md:hidden">
              <button onclick="deleteItem('${item.id}', '${item.storage_path}')" class="w-full bg-red-600 text-white text-[10px] font-bold py-1 rounded">X</button>
           </div>
@@ -62,101 +52,76 @@
     }
   }
 
-  /**
-   * Űrlap elküldésekor lefutó eseménykezelő (Feltöltés)
-   */
   form?.addEventListener('submit', async (e) => {
-    e.preventDefault(); // Alapértelmezett oldalon belüli küldés megakadályozása
+    e.preventDefault(); 
     
     const btn = document.getElementById('submit-btn') as HTMLButtonElement;
-    // Gomb letiltása és vizuális visszajelzés a duplikált kattintások elkerülésére
     btn.disabled = true; 
-    btn.innerText = "Feltöltés...";
 
-    // Input mezők értékeinek kinyerése
     const fileEl = document.getElementById('file') as HTMLInputElement;
-    const file = fileEl.files?.[0];
+    const rawFile = fileEl.files?.[0];
     const title = (document.getElementById('title') as HTMLInputElement).value;
     const category = (document.getElementById('category') as HTMLSelectElement).value;
 
-    // Ha nincs fájl kiválasztva, leállítjuk a folyamatot
-    if (!file) {
+    if (!rawFile) {
       btn.disabled = false;
-      btn.innerText = "Kép mentése a galériába";
       return;
     }
 
-    // Egyedi fájlnév létrehozása az ütközések elkerülésére (időbélyeg + eredeti név)
-    const fileName = `${Date.now()}-${file.name}`;
-    
-    // 1. LÉPÉS: Fájl feltöltése a Supabase Storage 'gallery' nevű vödrébe (bucket)
-    const { data: storageData, error: storageError } = await supabase.storage
-      .from('gallery')
-      .upload(fileName, file, {
-        cacheControl: '3600',
-        upsert: false // Ne írja felül, ha véletlen már létezik
-      });
+    try {
+      console.log(`Eredeti méret: ${(rawFile.size / 1024 / 1024).toFixed(2)} MB`);
+      btn.innerText = "Kép tömörítése folyamatban... (várj picit)";
 
-    // Ha a Storage feltöltés hibára fut
-    if (storageError) { 
-      console.error("Storage hiba részletesen:", storageError);
-      alert(`Storage hiba: ${storageError.message}`); 
+      // Tömörítési beállítások (Max 500 KB, Max 1080px szélesség)
+      const options = {
+        maxSizeMB: 0.5, 
+        maxWidthOrHeight: 1080,
+        useWebWorker: true,
+        fileType: 'image/webp' // Automatikusan modern formátumot csinál
+      };
+
+      // @ts-ignore - A window-ból érjük el a betöltött könyvtárat
+      const imageCompression = window.imageCompression;
+      const compressedFile = await imageCompression(rawFile, options);
+
+      console.log(`Tömörített méret: ${(compressedFile.size / 1024 / 1024).toFixed(2)} MB`);
+      btn.innerText = "Feltöltés a felhőbe...";
+
+      const fileName = `${Date.now()}-compressed.webp`;
+
+      // Feltöltés a Supabase-be (már csak az 500 KB alatti fájl megy fel!)
+      const { data: storageData, error: storageError } = await supabase.storage
+        .from('gallery')
+        .upload(fileName, compressedFile, { cacheControl: '3600', upsert: false });
+
+      if (storageError) throw storageError;
+
+      const { data: { publicUrl } } = supabase.storage.from('gallery').getPublicUrl(fileName);
+
+      const { error: dbError } = await supabase.from('gallery').insert([{
+        title, category, src: publicUrl, storage_path: fileName 
+      }]);
+
+      if (dbError) throw dbError;
+
+      form.reset();
+      loadGallery();
+
+    } catch (error: any) {
+      console.error("Feltöltési hiba:", error);
+      alert(`Hiba történt: ${error.message}`);
+    } finally {
       btn.disabled = false; 
-      btn.innerText = "Kép mentése a galériába"; 
-      return; 
+      btn.innerText = "Kép tömörítése és mentése a galériába";
     }
-
-    // 2. LÉPÉS: A feltöltött kép nyilvános URL címének lekérése
-    const { data: { publicUrl } } = supabase.storage.from('gallery').getPublicUrl(fileName);
-
-    // 3. LÉPÉS: Az adatok és a nyilvános URL beírása a 'gallery' adatbázis táblába
-    const { error: dbError } = await supabase.from('gallery').insert([{
-      title, 
-      category, 
-      src: publicUrl, 
-      storage_path: fileName // A későbbi törléshez elmentjük a pontos fájlnevet
-    }]);
-
-    // Adatbázis hiba kezelése
-    if (dbError) {
-      console.error("Adatbázis beszúrási hiba:", dbError.message);
-      alert("Az adatbázisba mentés sikertelen volt, de a fájl feltöltődött.");
-      btn.disabled = false;
-      btn.innerText = "Kép mentése a galériába";
-      return;
-    }
-
-    // Sikeres művelet után az űrlap alaphelyzetbe állítása és a gomb visszaállítása
-    form.reset();
-    btn.disabled = false; 
-    btn.innerText = "Kép mentése a galériába";
-    
-    // Galéria újratöltése, hogy azonnal látszódjon az új kép
-    loadGallery();
   });
 
-  /**
-   * Kép törlése funkció (Globálissá téve a window objektumon keresztül az inline onclick-ek miatt)
-   */
   (window as any).deleteItem = async (id: string, path: string) => {
     if (!confirm("Biztosan törlöd ezt a képet?")) return;
-    
-    // 1. LÉPÉS: Fájl törlése a Supabase Storage-ból
-    const { error: storageDeleteError } = await supabase.storage.from('gallery').remove([path]);
-    if (storageDeleteError) {
-      console.error("Hiba a fájl törlésekor a storage-ból:", storageDeleteError.message);
-    }
-    
-    // 2. LÉPÉS: Rekord törlése az adatbázisból
-    const { error: dbDeleteError } = await supabase.from('gallery').delete().eq('id', id);
-    if (dbDeleteError) {
-      console.error("Hiba az adatbázis rekord törlésekor:", dbDeleteError.message);
-    }
-    
-    // Lista frissítése
+    await supabase.storage.from('gallery').remove([path]);
+    await supabase.from('gallery').delete().eq('id', id);
     loadGallery();
   };
 
-  // Oldalbetöltéskor a galéria inicializálása
   loadGallery();
 </script>

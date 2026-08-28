@@ -34,7 +34,7 @@ let closedDates = [];
 
 // Ha a felhasználó sikeresen be van jelentkezve, lekérjük az adatokat az adatbázisból
 if (isAuthenticated) {
-    // 1. Foglalások lekérése időrendi sorrendben, a szolgáltatás nevének lekérésével együtt
+    // 1. Foglalások lekérése időrendi sorrendben, a szolgáltatás és kategória nevének lekérésével együtt
     const { data: bData, error: bError } = await supabase.from('bookings').select('*, prices(service_name, price_categories(name))').order('booking_date', { ascending: true });
         if (bError) {
             console.error("🔥 SUPABASE HIBA A FOGLALÁSOKNÁL: ", bError.message);
@@ -141,14 +141,14 @@ const getSetting = (key) => siteSettings.find(s => s.key === key)?.value || "";
                                         <td class="px-10 py-8 font-bold text-slate-800">{b.name}<br/><span class="text-xs text-slate-400 font-normal italic">{b.phone}</span></td>
                                         <td class="px-10 py-8 text-sm text-slate-600">{b.email}</td>
                                         <td class="px-10 py-8">
-    <div class="font-bold text-slate-800">
-        {b.prices?.price_categories?.name || 'Ismeretlen kategória'}
-    </div>
-    <div class="text-xs text-pink-600 font-bold mt-1">
-        {b.prices?.service_name || 'Nincs megadva'}
-    </div>
-</td>
-<td class="px-10 py-8 text-center">
+                                            <div class="font-bold text-slate-800">
+                                                {b.prices?.price_categories?.name || 'Ismeretlen kategória'}
+                                            </div>
+                                            <div class="text-xs text-pink-600 font-bold mt-1">
+                                                {b.prices?.service_name || 'Nincs megadva'}
+                                            </div>
+                                        </td>
+                                        <td class="px-10 py-8 text-center">
                                             {b.status === 'confirmed' ? 
                                                 <span class="px-4 py-1 rounded-full bg-green-100 text-green-600 text-[10px] font-bold uppercase tracking-widest border border-green-200">Megerősítve</span> : 
                                                 <span class="px-4 py-1 rounded-full bg-amber-100 text-amber-600 text-[10px] font-bold uppercase tracking-widest border border-amber-200">Függőben</span>
@@ -244,7 +244,7 @@ const getSetting = (key) => siteSettings.find(s => s.key === key)?.value || "";
                                 <label class="text-[10px] uppercase tracking-widest font-bold text-slate-400 ml-4">Fotó kiválasztása</label>
                                 <input type="file" id="g-file" accept="image/*" required class="w-full p-5 rounded-2xl bg-pink-50/30 border-2 border-dashed border-pink-100 text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-bold file:bg-pink-600 file:text-white" />
                             </div>
-                            <button type="submit" id="g-submit-btn" class="md:col-span-2 py-6 bg-pink-600 text-white font-bold rounded-3xl shadow-xl shadow-pink-200 active:scale-95 transition-all">Kép mentése</button>
+                            <button type="submit" id="g-submit-btn" class="md:col-span-2 py-6 bg-pink-600 text-white font-bold rounded-3xl shadow-xl shadow-pink-200 active:scale-95 transition-all">Kép tömörítése és mentése</button>
                         </form>
                     </div>
                     <!-- Meglévő képek rács nézete -->
@@ -354,9 +354,10 @@ const getSetting = (key) => siteSettings.find(s => s.key === key)?.value || "";
     </div>
 </Layout>
 
-<!-- Laprasimuló naptár (Flatpickr) stílus és script betöltése -->
+<!-- Külső naptár és képtömörítő script betöltése -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
 <script is:inline src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script is:inline src="https://cdn.jsdelivr.net/npm/browser-image-compression@2.0.2/dist/browser-image-compression.js"></script>
 
 <script>
     // Supabase kliens importálása a kliens oldali műveletekhez
@@ -545,39 +546,67 @@ const getSetting = (key) => siteSettings.find(s => s.key === key)?.value || "";
             }
         }));
 
-        // Galéria kép feltöltése Storage-ba és adatbázisba
+        // Galéria kép feltöltése automatikus tömörítéssel (WebP, max 500 KB)
         document.getElementById('gallery-upload-form')?.addEventListener('submit', async (e) => {
             e.preventDefault();
             const btn = document.getElementById('g-submit-btn') as HTMLButtonElement;
-            btn.disabled = true; btn.innerText = "Feltöltés...";
+            btn.disabled = true; 
+            btn.innerText = "Kép tömörítése...";
 
             const fileEl = document.getElementById('g-file') as HTMLInputElement;
-            const file = fileEl.files?.[0];
+            const rawFile = fileEl.files?.[0];
             const title = (document.getElementById('g-title') as HTMLInputElement).value;
             const category = (document.getElementById('g-category') as HTMLInputElement).value;
 
-            if (!file) { btn.disabled = false; btn.innerText = "Kép mentése"; return; }
-
-            const fileName = `${Date.now()}-${file.name}`;
-            const { error: storageError } = await supabase.storage.from('gallery').upload(fileName, file, { cacheControl: '3600', upsert: false });
-
-            if (storageError) { 
-                alert(`Feltöltési hiba: ${storageError.message}`); 
-                btn.disabled = false; btn.innerText = "Kép mentése"; 
+            if (!rawFile) { 
+                btn.disabled = false; 
+                btn.innerText = "Kép mentése"; 
                 return; 
             }
 
-            const { data: { publicUrl } } = supabase.storage.from('gallery').getPublicUrl(fileName);
-            const { error: dbError } = await supabase.from('gallery').insert([{ title, category, src: publicUrl, storage_path: fileName }]);
+            try {
+                const options = {
+                    maxSizeMB: 0.5,
+                    maxWidthOrHeight: 1080,
+                    useWebWorker: true,
+                    fileType: 'image/webp'
+                };
 
-            if (dbError) { 
-                alert("Adatbázis mentési hiba!"); 
-                btn.disabled = false; btn.innerText = "Kép mentése"; 
-                return; 
+                // @ts-ignore
+                const imageCompression = window.imageCompression;
+                const compressedFile = await imageCompression(rawFile, options);
+
+                btn.innerText = "Feltöltés...";
+                const fileName = `${Date.now()}-compressed.webp`;
+
+                const { error: storageError } = await supabase.storage.from('gallery').upload(fileName, compressedFile, { cacheControl: '3600', upsert: false });
+
+                if (storageError) { 
+                    alert(`Feltöltési hiba: ${storageError.message}`); 
+                    btn.disabled = false; 
+                    btn.innerText = "Kép mentése"; 
+                    return; 
+                }
+
+                const { data: { publicUrl } } = supabase.storage.from('gallery').getPublicUrl(fileName);
+                const { error: dbError } = await supabase.from('gallery').insert([{ title, category, src: publicUrl, storage_path: fileName }]);
+
+                if (dbError) { 
+                    alert("Adatbázis mentési hiba!"); 
+                    btn.disabled = false; 
+                    btn.innerText = "Kép mentése"; 
+                    return; 
+                }
+
+                alert("Kép sikeresen mentve és tömörítve!");
+                location.reload();
+
+            } catch (err: any) {
+                console.error("Tömörítési hiba:", err);
+                alert(`Hiba a kép feldolgozása közben: ${err.message}`);
+                btn.disabled = false; 
+                btn.innerText = "Kép mentése";
             }
-
-            alert("Kép sikeresen mentve!");
-            location.reload();
         });
 
         // Galéria kép törlése (Storage-ból és DB-ből is)
