@@ -80,16 +80,27 @@ export const POST: APIRoute = async ({ request }) => {
     // 4/c. SZOLGÁLTATÁS ÉS IDŐTARTAM LEKÉRÉSE A PRICES TÁBLÁBÓL
     // ==========================================
     let durationMinutes = 180; // Alapértelmezett 3 óra
+    let serviceName = "Nincs megadva";
+    let categoryName = "Nincs megadva";
 
     if (serviceId) {
+      // Kibővített lekérdezés a price_categories táblára is
       const { data: serviceData } = await supabase
         .from('prices')
-        .select('duration_minutes')
+        .select('duration_minutes, service_name, price_categories(name)')
         .eq('id', serviceId)
         .maybeSingle();
 
-      if (serviceData && serviceData.duration_minutes) {
-        durationMinutes = serviceData.duration_minutes;
+      if (serviceData) {
+        if (serviceData.duration_minutes) {
+          durationMinutes = serviceData.duration_minutes;
+        }
+        if (serviceData.service_name) {
+          serviceName = serviceData.service_name;
+        }
+        if (serviceData.price_categories && (serviceData.price_categories as any).name) {
+          categoryName = (serviceData.price_categories as any).name;
+        }
       }
     }
 
@@ -193,8 +204,9 @@ export const POST: APIRoute = async ({ request }) => {
         const gCalStartTime = `${year}${month}${day}T${pad(startHour)}${pad(startMinute)}00`;
         const gCalEndTime = `${year}${month}${day}T${pad(endHour)}${pad(endMinute)}00`;
         
-        const gCalTitle = encodeURIComponent(`${name} időpontot foglalt`);
-        const gCalDetails = encodeURIComponent(`Vendég neve: ${name}\nTelefonszám: ${phone || 'Nincs megadva'}\nE-mail cím: ${email}`);
+        // --- NAPTÁR CÍME ÉS LEÍRÁSA A KATEGÓRIÁVAL ÉS MÉRETTEL ---
+        const gCalTitle = encodeURIComponent(`${name} - ${serviceName}`);
+        const gCalDetails = encodeURIComponent(`Vendég neve: ${name}\nKategória: ${categoryName}\nMéret/Szolgáltatás: ${serviceName}\nTelefonszám: ${phone || 'Nincs megadva'}\nE-mail cím: ${email}`);
         
         const googleCalendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${gCalTitle}&dates=${gCalStartTime}/${gCalEndTime}&details=${gCalDetails}`;
 
@@ -210,7 +222,7 @@ export const POST: APIRoute = async ({ request }) => {
         await resend.emails.send({
           from: 'Nails by Nelly System <info@nailsbynelly.hu>',
           to: ['nellirad@gmail.com'], 
-          subject: '✨ ÚJ IDŐPONT FOGLALÁS ÉRKEZETT!',
+          subject: `✨ ÚJ FOGLALÁS: ${serviceName}`,
           html: `
             <div style="font-family: sans-serif; line-height: 1.6; color: #333; max-width: 600px; border: 1px solid #eee; padding: 20px; border-radius: 10px;">
               <h2 style="color: #db2777; border-bottom: 2px solid #fbcfe8; padding-bottom: 10px;">Új foglalási értesítés</h2>
@@ -219,6 +231,8 @@ export const POST: APIRoute = async ({ request }) => {
               <div style="background-color: #f9fafb; padding: 15px; border-radius: 8px; margin: 20px 0;">
                 <p><strong>Vendég neve:</strong> ${name}</p>
                 <p><strong>Időpont:</strong> ${formattedDate}</p>
+                <p><strong>Kategória:</strong> ${categoryName}</p>
+                <p><strong>Méret:</strong> ${serviceName}</p>
                 <p><strong>Telefonszám:</strong> ${phone || 'Nincs megadva'}</p>
                 <p><strong>E-mail cím:</strong> ${email}</p>
               </div>
