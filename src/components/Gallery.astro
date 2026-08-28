@@ -37,28 +37,42 @@ const categories = ["Összes", ...rawCategories];
     </div>
 
     <div id="gallery-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-      {works.map((work) => (
-        <div 
-          class="gallery-item group relative overflow-hidden rounded-[2.5rem] bg-slate-100 cursor-pointer aspect-4/5"
-          data-category={work.category}
-          data-src={work.src}
-          data-title={work.title}
-        >
-          <!-- SEO és Teljesítmény optimalizált img tag -->
-          <img 
-            src={work.src} 
-            alt={`${work.title} - ${work.category} | Nails by Nelly Szeged`} 
-            loading="lazy"
-            decoding="async"
-            class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-          />
-          <div class="absolute inset-0 bg-linear-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 flex flex-col justify-end p-8">
-            <span class="text-pink-400 text-xs font-bold uppercase tracking-widest mb-1">{work.category}</span>
-            <h3 class="hidden text-white text-xl font-serif">{work.title}</h3>
+      {works.map((work, index) => {
+        const isInitial = index < 3;
+        return (
+          <div 
+            class={`gallery-item group relative overflow-hidden rounded-[2.5rem] bg-slate-100 cursor-pointer aspect-4/5 ${!isInitial ? 'hidden-gallery-item' : ''}`}
+            style={!isInitial ? 'display: none;' : 'display: block;'}
+            data-category={work.category}
+            data-title={work.title}
+          >
+            <img 
+              src={isInitial ? work.src : ""} 
+              data-src={work.src}
+              alt={`${work.title} - ${work.category} | Nails by Nelly Szeged`} 
+              loading="lazy"
+              decoding="async"
+              class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+            />
+            <div class="absolute inset-0 bg-linear-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 flex flex-col justify-end p-8">
+              <span class="text-pink-400 text-xs font-bold uppercase tracking-widest mb-1">{work.category}</span>
+              <h3 class="text-white text-xl font-serif">{work.title}</h3>
+            </div>
           </div>
-        </div>
-      ))}
+        );
+      })}
     </div>
+
+    {works.length > 3 && (
+      <div class="text-center mt-12" id="load-more-container">
+        <button 
+          id="load-more-gallery-btn"
+          class="px-8 py-4 bg-pink-600 text-white font-bold rounded-full shadow-lg hover:bg-pink-700 transition-all active:scale-95"
+        >
+          Teljes galéria megtekintése
+        </button>
+      </div>
+    )}
   </div>
 
   <div id="lightbox" class="fixed inset-0 z-100 flex items-center justify-center bg-slate-950/95 backdrop-blur-xl opacity-0 pointer-events-none transition-opacity duration-500">
@@ -74,10 +88,9 @@ const categories = ["Összes", ...rawCategories];
     </button>
 
     <div class="max-w-[90vw] max-h-[85vh] relative flex flex-col items-center">
-      <!-- Lightbox kép optimalizálása lazy loading-al -->
       <img id="lightbox-img" src="" alt="" loading="lazy" decoding="async" class="max-w-full max-h-[70vh] rounded-3xl shadow-2xl object-contain ring-1 ring-white/10" />
       <div class="mt-8 text-center px-4">
-        <h3 id="lightbox-title" class="text-white text-2xl md:text-3xl font-serif font-light tracking-wide hidden"></h3>
+        <h3 id="lightbox-title" class="text-white text-2xl md:text-3xl font-serif font-light tracking-wide"></h3>
         <p id="lightbox-cat" class="text-pink-400 text-xs font-bold uppercase tracking-[0.3em] mt-3"></p>
       </div>
     </div>
@@ -87,7 +100,8 @@ const categories = ["Összes", ...rawCategories];
 <script>
   function initGallery() {
     const filterButtons = document.querySelectorAll('.filter-btn') as NodeListOf<HTMLButtonElement>;
-    const galleryItems = document.querySelectorAll('.gallery-item') as NodeListOf<HTMLElement>;
+    const loadMoreBtn = document.getElementById('load-more-gallery-btn') as HTMLButtonElement;
+    const loadMoreContainer = document.getElementById('load-more-container') as HTMLElement;
     const lightbox = document.getElementById('lightbox') as HTMLElement;
     const lightboxImg = document.getElementById('lightbox-img') as HTMLImageElement;
     const lightboxTitle = document.getElementById('lightbox-title') as HTMLElement;
@@ -98,13 +112,61 @@ const categories = ["Összes", ...rawCategories];
 
     if (!lightbox) return;
 
-    let currentVisibleItems: HTMLElement[] = Array.from(galleryItems);
-    let currentIndex = 0;
+    let currentFilter = "Összes";
+    let isExpanded = false;
 
-    // --- SZŰRÉS ---
+    // Összes kép betöltése és megjelenítése a rejtett elemeknél
+    const expandAllImages = () => {
+      isExpanded = true;
+      if (loadMoreContainer) loadMoreContainer.style.display = 'none';
+      
+      document.querySelectorAll('.hidden-gallery-item').forEach(el => {
+        el.classList.remove('hidden-gallery-item');
+        const img = el.querySelector('img');
+        if (img && !img.getAttribute('src') && img.dataset.src) {
+          img.src = img.dataset.src;
+        }
+      });
+    };
+
+    const updateVisibility = () => {
+      const galleryItems = document.querySelectorAll('.gallery-item') as NodeListOf<HTMLElement>;
+      
+      galleryItems.forEach(item => {
+        const itemCat = item.getAttribute('data-category');
+        const matchesFilter = (currentFilter === "Összes" || itemCat === currentFilter);
+        const isHiddenClass = item.classList.contains('hidden-gallery-item');
+
+        if (matchesFilter) {
+          if (isExpanded || !isHiddenClass) {
+            item.style.display = "block";
+            
+            const img = item.querySelector('img');
+            if (img && !img.getAttribute('src') && img.dataset.src) {
+              img.src = img.dataset.src;
+            }
+          } else {
+            item.style.display = "none";
+          }
+        } else {
+          item.style.display = "none";
+        }
+      });
+    };
+
+    loadMoreBtn?.addEventListener('click', () => {
+      expandAllImages();
+      updateVisibility();
+    });
+
     filterButtons.forEach(btn => {
       btn.addEventListener('click', () => {
-        const filter = btn.getAttribute('data-filter');
+        currentFilter = btn.getAttribute('data-filter') || "Összes";
+        
+        // Ha kategóriát vált, automatikusan betöltjük az összes többi képet is
+        if (!isExpanded) {
+          expandAllImages();
+        }
         
         filterButtons.forEach(b => {
           b.classList.remove('bg-pink-600', 'text-white', 'shadow-lg', 'border-pink-600');
@@ -113,27 +175,25 @@ const categories = ["Összes", ...rawCategories];
         btn.classList.add('bg-pink-600', 'text-white', 'shadow-lg', 'border-pink-600');
         btn.classList.remove('bg-white', 'text-slate-700', 'border-pink-100');
 
-        currentVisibleItems = [];
-        galleryItems.forEach(item => {
-          const itemCat = item.getAttribute('data-category');
-          if (filter === "Összes" || itemCat === filter) {
-            item.style.display = "block";
-            setTimeout(() => { item.style.opacity = "1"; }, 10);
-            currentVisibleItems.push(item);
-          } else {
-            item.style.opacity = "0";
-            setTimeout(() => { item.style.display = "none"; }, 300);
-          }
-        });
+        updateVisibility();
       });
     });
 
-    // --- LIGHTBOX ---
+    const getVisibleItems = (): HTMLElement[] => {
+      return Array.from(document.querySelectorAll('.gallery-item') as NodeListOf<HTMLElement>).filter(
+        item => item.style.display !== "none"
+      );
+    };
+
+    let currentIndex = 0;
+
     const updateLightbox = (index: number) => {
-      const item = currentVisibleItems[index];
+      const visibleItems = getVisibleItems();
+      const item = visibleItems[index];
       if (!item) return;
 
-      const src = item.getAttribute('data-src') || '';
+      const img = item.querySelector('img');
+      const src = img?.getAttribute('src') || img?.getAttribute('data-src') || '';
       const title = item.getAttribute('data-title') || '';
       const cat = item.getAttribute('data-category') || '';
 
@@ -145,14 +205,16 @@ const categories = ["Összes", ...rawCategories];
       currentIndex = index;
     };
 
-    galleryItems.forEach(item => {
-      item.addEventListener('click', () => {
-        const index = currentVisibleItems.indexOf(item);
-        if (index !== -1) {
-          updateLightbox(index);
-          lightbox.classList.remove('opacity-0', 'pointer-events-none');
-        }
-      });
+    document.getElementById('gallery-grid')?.addEventListener('click', (e) => {
+      const item = (e.target as HTMLElement).closest('.gallery-item') as HTMLElement;
+      if (!item) return;
+
+      const visibleItems = getVisibleItems();
+      const index = visibleItems.indexOf(item);
+      if (index !== -1) {
+        updateLightbox(index);
+        lightbox.classList.remove('opacity-0', 'pointer-events-none');
+      }
     });
 
     const closeLightbox = () => {
@@ -168,15 +230,17 @@ const categories = ["Összes", ...rawCategories];
 
     nextBtn?.addEventListener('click', (e) => {
       e.stopPropagation();
-      if (currentVisibleItems.length === 0) return;
-      currentIndex = (currentIndex + 1) % currentVisibleItems.length;
+      const visibleItems = getVisibleItems();
+      if (visibleItems.length === 0) return;
+      currentIndex = (currentIndex + 1) % visibleItems.length;
       updateLightbox(currentIndex);
     });
 
     prevBtn?.addEventListener('click', (e) => {
       e.stopPropagation();
-      if (currentVisibleItems.length === 0) return;
-      currentIndex = (currentIndex - 1 + currentVisibleItems.length) % currentVisibleItems.length;
+      const visibleItems = getVisibleItems();
+      if (visibleItems.length === 0) return;
+      currentIndex = (currentIndex - 1 + visibleItems.length) % visibleItems.length;
       updateLightbox(currentIndex);
     });
 
@@ -194,6 +258,6 @@ const categories = ["Összes", ...rawCategories];
 
 <style>
   .gallery-item {
-    transition: opacity 0.3s ease, transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   }
 </style>
